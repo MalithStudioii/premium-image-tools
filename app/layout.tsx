@@ -15,7 +15,10 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Premium Image Tools - Fast, Free & 100% Private",
-  description: "Compress and crop images directly in your browser with zero server uploads.",
+  description: "Compress, crop, resize, and edit images directly in your browser with zero server uploads.",
+  other: {
+    monetag: "100e29890dd00794240cf66653783056",
+  },
 };
 
 export default function RootLayout({
@@ -28,6 +31,9 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
+      <head>
+        <meta name="monetag" content="100e29890dd00794240cf66653783056" />
+      </head>
       <body className="min-h-full flex flex-col bg-gray-50/50 text-gray-900 font-sans">
         <Navbar />
         <div className="flex-1">{children}</div>
