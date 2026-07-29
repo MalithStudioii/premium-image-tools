@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 
 export default function MonetagAds() {
   useEffect(() => {
-    // Inject Monetag Vignette / Interstitial Script (Zone: 11453477)
+    // 1. Inject Monetag Vignette / Interstitial Script (Zone: 11453477)
     if (!document.querySelector('script[data-zone="11453477"]')) {
       try {
         const s = document.createElement('script');
@@ -13,7 +13,20 @@ export default function MonetagAds() {
         s.async = true;
         (document.head || document.documentElement).appendChild(s);
       } catch (err) {
-        console.error('Monetag ad script load error:', err);
+        console.error('Monetag Vignette ad script load error:', err);
+      }
+    }
+
+    // 2. Inject Monetag OnClick / Popunder Script (Zone: 11453486)
+    if (!document.querySelector('script[data-zone="11453486"]')) {
+      try {
+        const s = document.createElement('script');
+        s.dataset.zone = '11453486';
+        s.src = 'https://al5sm.com/tag.min.js';
+        s.async = true;
+        (document.head || document.documentElement).appendChild(s);
+      } catch (err) {
+        console.error('Monetag Popunder ad script load error:', err);
       }
     }
   }, []);
