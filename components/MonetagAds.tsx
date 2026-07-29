@@ -29,6 +29,19 @@ export default function MonetagAds() {
         console.error('Monetag Popunder ad script load error:', err);
       }
     }
+
+    // 3. Inject Monetag In-Page Push (IPP) Script (Zone: 11453490)
+    if (!document.querySelector('script[data-zone="11453490"]')) {
+      try {
+        const s = document.createElement('script');
+        s.dataset.zone = '11453490';
+        s.src = 'https://nap5k.com/tag.min.js';
+        s.async = true;
+        (document.head || document.documentElement).appendChild(s);
+      } catch (err) {
+        console.error('Monetag IPP ad script load error:', err);
+      }
+    }
   }, []);
 
   return null;
