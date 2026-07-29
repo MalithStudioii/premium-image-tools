@@ -2,6 +2,7 @@ import "./globals.css";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Navbar from "@/components/Navbar";
+import MonetagAds from "@/components/MonetagAds";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -35,6 +36,7 @@ export default function RootLayout({
         <meta name="monetag" content="100e29890dd00794240cf66653783056" />
       </head>
       <body className="min-h-full flex flex-col bg-gray-50/50 text-gray-900 font-sans">
+        <MonetagAds />
         <Navbar />
         <div className="flex-1">{children}</div>
         <footer className="py-8 border-t border-gray-200/60 bg-white/70 backdrop-blur-xs text-center text-xs text-gray-500">
