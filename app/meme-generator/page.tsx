@@ -478,17 +478,37 @@ export default function MemeGeneratorPage() {
     }
   }, [renderCanvas]);
 
-  // Mouse canvas hit test & drag handlers
-  const handleCanvasMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  // Helper to extract canvas relative coordinates from Mouse or Touch events
+  const getCanvasCoords = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
+    if (!canvas) return { mouseX: 0, mouseY: 0 };
     const rect = canvas.getBoundingClientRect();
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
 
-    const mouseX = (e.clientX - rect.left) * scaleX;
-    const mouseY = (e.clientY - rect.top) * scaleY;
+    let clientX = 0;
+    let clientY = 0;
+
+    if ('touches' in e && e.touches.length > 0) {
+      clientX = e.touches[0].clientX;
+      clientY = e.touches[0].clientY;
+    } else if ('clientX' in e) {
+      clientX = e.clientX;
+      clientY = e.clientY;
+    }
+
+    const mouseX = (clientX - rect.left) * scaleX;
+    const mouseY = (clientY - rect.top) * scaleY;
+
+    return { mouseX, mouseY };
+  };
+
+  // Start dragging (Mouse / Touch)
+  const startDrag = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const { mouseX, mouseY } = getCanvasCoords(e);
 
     // Check hit on Top Text
     if (topText.trim()) {
@@ -499,10 +519,10 @@ export default function MemeGeneratorPage() {
         ctx.font = `900 ${topStyle.fontSize}px "${topStyle.fontFamily}", sans-serif`;
         const tw = ctx.measureText(topStr).width;
         if (
-          mouseX >= tx - tw / 2 - 12 &&
-          mouseX <= tx + tw / 2 + 12 &&
-          mouseY >= ty - topStyle.fontSize / 2 - 12 &&
-          mouseY <= ty + topStyle.fontSize / 2 + 12
+          mouseX >= tx - tw / 2 - 18 &&
+          mouseX <= tx + tw / 2 + 18 &&
+          mouseY >= ty - topStyle.fontSize / 2 - 18 &&
+          mouseY <= ty + topStyle.fontSize / 2 + 18
         ) {
           setSelectedTextTarget('top');
           setActiveDragTarget('topText');
@@ -523,10 +543,10 @@ export default function MemeGeneratorPage() {
         ctx.font = `900 ${bottomStyle.fontSize}px "${bottomStyle.fontFamily}", sans-serif`;
         const bw = ctx.measureText(bottomStr).width;
         if (
-          mouseX >= bx - bw / 2 - 12 &&
-          mouseX <= bx + bw / 2 + 12 &&
-          mouseY >= by - bottomStyle.fontSize / 2 - 12 &&
-          mouseY <= by + bottomStyle.fontSize / 2 + 12
+          mouseX >= bx - bw / 2 - 18 &&
+          mouseX <= bx + bw / 2 + 18 &&
+          mouseY >= by - bottomStyle.fontSize / 2 - 18 &&
+          mouseY <= by + bottomStyle.fontSize / 2 + 18
         ) {
           setSelectedTextTarget('bottom');
           setActiveDragTarget('bottomText');
@@ -550,10 +570,10 @@ export default function MemeGeneratorPage() {
       const h = baseH * baseFitScale * layer.scale;
 
       if (
-        mouseX >= lx - w / 2 &&
-        mouseX <= lx + w / 2 &&
-        mouseY >= ly - h / 2 &&
-        mouseY <= ly + h / 2
+        mouseX >= lx - w / 2 - 14 &&
+        mouseX <= lx + w / 2 + 14 &&
+        mouseY >= ly - h / 2 - 14 &&
+        mouseY <= ly + h / 2 + 14
       ) {
         setActiveLayerId(layer.id);
         setActiveDragTarget('layer');
@@ -568,17 +588,13 @@ export default function MemeGeneratorPage() {
     setActiveDragTarget(null);
   };
 
-  const handleCanvasMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  // Move dragging (Mouse / Touch)
+  const moveDrag = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
     if (!isDraggingLayer) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-
-    const mouseX = (e.clientX - rect.left) * scaleX;
-    const mouseY = (e.clientY - rect.top) * scaleY;
+    const { mouseX, mouseY } = getCanvasCoords(e);
 
     const newLx = mouseX - dragOffset.x;
     const newLy = mouseY - dragOffset.y;
@@ -599,7 +615,7 @@ export default function MemeGeneratorPage() {
     }
   };
 
-  const handleCanvasMouseUp = () => {
+  const endDrag = () => {
     if (isDraggingLayer) {
       setIsDraggingLayer(false);
       pushHistorySnapshot();
@@ -744,11 +760,14 @@ export default function MemeGeneratorPage() {
           <div className="relative w-full bg-slate-900 rounded-3xl p-4 border border-slate-800 shadow-xl flex items-center justify-center min-h-[420px] overflow-hidden">
             <canvas
               ref={canvasRef}
-              className="max-h-[480px] w-auto max-w-full rounded-xl object-contain shadow-2xl cursor-grab active:cursor-grabbing"
-              onMouseDown={handleCanvasMouseDown}
-              onMouseMove={handleCanvasMouseMove}
-              onMouseUp={handleCanvasMouseUp}
-              onMouseLeave={handleCanvasMouseUp}
+              className="touch-none select-none max-h-[480px] w-auto max-w-full rounded-xl object-contain shadow-2xl cursor-grab active:cursor-grabbing"
+              onMouseDown={startDrag}
+              onMouseMove={moveDrag}
+              onMouseUp={endDrag}
+              onMouseLeave={endDrag}
+              onTouchStart={startDrag}
+              onTouchMove={moveDrag}
+              onTouchEnd={endDrag}
             />
           </div>
 
