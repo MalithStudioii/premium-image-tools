@@ -2,6 +2,12 @@
 
 import { useEffect } from 'react';
 
+declare global {
+  interface Window {
+    triggerMonetagAd?: () => void;
+  }
+}
+
 export default function MonetagAds() {
   useEffect(() => {
     // 1. Inject Monetag Vignette / Interstitial Script (Zone: 11453477)
@@ -42,7 +48,27 @@ export default function MonetagAds() {
         console.error('Monetag IPP ad script load error:', err);
       }
     }
+
+    // Define window.triggerMonetagAd helper
+    window.triggerMonetagAd = () => {
+      try {
+        const dummyClick = new MouseEvent('click', {
+          bubbles: true,
+          cancelable: true,
+          view: window,
+        });
+        document.documentElement.dispatchEvent(dummyClick);
+      } catch (e) {
+        // silent catch
+      }
+    };
   }, []);
 
   return null;
+}
+
+export function triggerMonetagAd() {
+  if (typeof window !== 'undefined' && window.triggerMonetagAd) {
+    window.triggerMonetagAd();
+  }
 }
