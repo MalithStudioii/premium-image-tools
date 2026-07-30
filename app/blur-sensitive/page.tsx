@@ -135,43 +135,63 @@ export default function BlurSensitivePage() {
     renderCanvas();
   }, [renderCanvas]);
 
-  // Canvas Mouse Event Handlers
-  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  // Canvas Mouse & Touch Event Handlers
+  const getCanvasCoordinates = (
+    e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>
+  ) => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas) return null;
 
     const rect = canvas.getBoundingClientRect();
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
 
-    const x = (e.clientX - rect.left) * scaleX;
-    const y = (e.clientY - rect.top) * scaleY;
+    let clientX = 0;
+    let clientY = 0;
 
-    setStartPos({ x, y });
-    setIsDrawing(true);
-    setCurrentRect({ x, y, width: 0, height: 0 });
+    if ('touches' in e) {
+      if (e.touches.length === 0) return null;
+      clientX = e.touches[0].clientX;
+      clientY = e.touches[0].clientY;
+    } else {
+      clientX = e.clientX;
+      clientY = e.clientY;
+    }
+
+    const x = (clientX - rect.left) * scaleX;
+    const y = (clientY - rect.top) * scaleY;
+
+    return { x, y };
   };
 
-  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!isDrawing || !startPos || !canvasRef.current) return;
+  const handleStart = (
+    e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>
+  ) => {
+    const coords = getCanvasCoordinates(e);
+    if (!coords) return;
 
-    const canvas = canvasRef.current;
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
+    setStartPos(coords);
+    setIsDrawing(true);
+    setCurrentRect({ x: coords.x, y: coords.y, width: 0, height: 0 });
+  };
 
-    const currentX = (e.clientX - rect.left) * scaleX;
-    const currentY = (e.clientY - rect.top) * scaleY;
+  const handleMove = (
+    e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>
+  ) => {
+    if (!isDrawing || !startPos) return;
 
-    const x = Math.min(startPos.x, currentX);
-    const y = Math.min(startPos.y, currentY);
-    const width = Math.abs(currentX - startPos.x);
-    const height = Math.abs(currentY - startPos.y);
+    const coords = getCanvasCoordinates(e);
+    if (!coords) return;
+
+    const x = Math.min(startPos.x, coords.x);
+    const y = Math.min(startPos.y, coords.y);
+    const width = Math.abs(coords.x - startPos.x);
+    const height = Math.abs(coords.y - startPos.y);
 
     setCurrentRect({ x, y, width, height });
   };
 
-  const handleMouseUp = () => {
+  const handleEnd = () => {
     if (isDrawing && currentRect && currentRect.width > 5 && currentRect.height > 5) {
       const newRegion: BlurRegion = {
         id: Date.now().toString(),
@@ -376,7 +396,7 @@ export default function BlurSensitivePage() {
               <span className="font-bold flex items-center gap-1">
                 💡 How to use:
               </span>
-              <p>Click & drag your mouse over any area on the image canvas to apply blur or blackout redaction.</p>
+              <p>Click or touch & drag over any area on the image canvas to apply blur or blackout redaction.</p>
             </div>
 
             {/* Download Button */}
@@ -394,14 +414,19 @@ export default function BlurSensitivePage() {
             <div className="relative w-full max-h-[550px] overflow-auto rounded-2xl bg-gray-900 flex items-center justify-center p-2">
               <canvas
                 ref={canvasRef}
-                onMouseDown={handleMouseDown}
-                onMouseMove={handleMouseMove}
-                onMouseUp={handleMouseUp}
-                className="max-w-full max-h-[500px] object-contain cursor-crosshair rounded-lg shadow-lg"
+                onMouseDown={handleStart}
+                onMouseMove={handleMove}
+                onMouseUp={handleEnd}
+                onMouseLeave={handleEnd}
+                onTouchStart={handleStart}
+                onTouchMove={handleMove}
+                onTouchEnd={handleEnd}
+                onTouchCancel={handleEnd}
+                className="max-w-full max-h-[500px] object-contain cursor-crosshair rounded-lg shadow-lg touch-none"
               />
             </div>
-            <p className="text-xs text-gray-400 mt-3 font-medium">
-              Drag mouse on image to draw redaction box • {regions.length} region(s) applied
+            <p className="text-xs text-gray-400 mt-3 font-medium text-center">
+              Drag mouse or finger on image to draw redaction box • {regions.length} region(s) applied
             </p>
           </div>
 

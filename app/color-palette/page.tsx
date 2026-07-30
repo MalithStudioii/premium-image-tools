@@ -314,7 +314,7 @@ export default function ColorPalettePage() {
                 <img
                   src={imageSrc}
                   alt="Color Inspector target"
-                  className="max-h-[450px] w-auto max-w-full rounded-xl object-contain shadow-md"
+                  className="max-h-[450px] w-auto max-w-full rounded-xl object-contain shadow-md touch-none"
                   onMouseMove={(e) => {
                     const img = e.currentTarget;
                     const rect = img.getBoundingClientRect();
@@ -358,6 +358,83 @@ export default function ColorPalettePage() {
                         }
                       }
                     }
+                  }}
+                  onTouchStart={(e) => {
+                    setIsHoveringCanvas(true);
+                    if (e.touches.length === 0) return;
+                    const touch = e.touches[0];
+                    const img = e.currentTarget;
+                    const rect = img.getBoundingClientRect();
+                    const canvas = canvasRef.current;
+                    if (!canvas) return;
+
+                    const scaleX = canvas.width / rect.width;
+                    const scaleY = canvas.height / rect.height;
+
+                    const x = Math.floor((touch.clientX - rect.left) * scaleX);
+                    const y = Math.floor((touch.clientY - rect.top) * scaleY);
+
+                    setMousePos({ x: touch.clientX - rect.left, y: touch.clientY - rect.top });
+
+                    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+                    if (!ctx) return;
+
+                    if (x >= 0 && x < canvas.width && y >= 0 && y < canvas.height) {
+                      const pixel = ctx.getImageData(x, y, 1, 1).data;
+                      const hex = rgbToHex(pixel[0], pixel[1], pixel[2]);
+                      setHoverColor(hex);
+                      setSelectedColor(hex);
+                    }
+                  }}
+                  onTouchMove={(e) => {
+                    if (e.touches.length === 0) return;
+                    const touch = e.touches[0];
+                    const img = e.currentTarget;
+                    const rect = img.getBoundingClientRect();
+                    const canvas = canvasRef.current;
+                    if (!canvas) return;
+
+                    const scaleX = canvas.width / rect.width;
+                    const scaleY = canvas.height / rect.height;
+
+                    const x = Math.floor((touch.clientX - rect.left) * scaleX);
+                    const y = Math.floor((touch.clientY - rect.top) * scaleY);
+
+                    setMousePos({ x: touch.clientX - rect.left, y: touch.clientY - rect.top });
+
+                    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+                    if (!ctx) return;
+
+                    if (x >= 0 && x < canvas.width && y >= 0 && y < canvas.height) {
+                      const pixel = ctx.getImageData(x, y, 1, 1).data;
+                      const hex = rgbToHex(pixel[0], pixel[1], pixel[2]);
+                      setHoverColor(hex);
+                      setSelectedColor(hex);
+
+                      // Update Loupe Canvas
+                      const zoomCanvas = zoomCanvasRef.current;
+                      if (zoomCanvas) {
+                        const zoomCtx = zoomCanvas.getContext('2d');
+                        if (zoomCtx) {
+                          zoomCtx.imageSmoothingEnabled = false;
+                          zoomCtx.clearRect(0, 0, 110, 110);
+                          zoomCtx.drawImage(
+                            canvas,
+                            Math.max(0, x - 10),
+                            Math.max(0, y - 10),
+                            20, 20,
+                            0, 0,
+                            110, 110
+                          );
+                          zoomCtx.strokeStyle = '#ffffff';
+                          zoomCtx.lineWidth = 2;
+                          zoomCtx.strokeRect(50, 50, 10, 10);
+                        }
+                      }
+                    }
+                  }}
+                  onTouchEnd={() => {
+                    setIsHoveringCanvas(false);
                   }}
                   onClick={() => {
                     if (hoverColor) setSelectedColor(hoverColor);
