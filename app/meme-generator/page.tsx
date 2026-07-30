@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Smile, Upload, Download, Copy, Check, Type, Layers, Trash2, RotateCw, ZoomIn, Eye, Image as ImageIcon, Undo2, Redo2, X, Search, Sparkles } from 'lucide-react';
+import { Smile, Upload, Download, Copy, Check, Type, Layers, Trash2, RotateCw, ZoomIn, Eye, Image as ImageIcon, Undo2, Redo2, X, Search, Sparkles, ChevronDown, ChevronUp, Sliders, Palette, LayoutTemplate } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export interface ImageLayer {
@@ -350,6 +350,13 @@ export default function MemeGeneratorPage() {
   const [layoutMode, setLayoutMode] = useState<'standard' | 'twitter-card'>('standard');
   const [twitterName, setTwitterName] = useState<string>('Developer');
   const [twitterHandle, setTwitterHandle] = useState<string>('@dev_guy');
+
+  // Accordion Drawers UI State (Smart Tool Collapsible Drawers)
+  const [openSection, setOpenSection] = useState<'text' | 'layout' | 'emoji' | 'bg' | 'filters' | 'watermark' | null>('text');
+
+  const toggleSection = (section: 'text' | 'layout' | 'emoji' | 'bg' | 'filters' | 'watermark') => {
+    setOpenSection((prev) => (prev === section ? null : section));
+  };
 
   // Emoji Picker Modal Popover States
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
@@ -1282,8 +1289,8 @@ export default function MemeGeneratorPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 w-full">
         
-        {/* Left Column: Interactive Canvas Studio */}
-        <div className="lg:col-span-7 flex flex-col items-center">
+        {/* Left Column: Interactive Canvas Studio (Sticky Top) */}
+        <div className="lg:col-span-7 flex flex-col items-center lg:sticky lg:top-6 self-start z-30">
           <div className="relative w-full bg-slate-900 rounded-3xl p-4 border border-slate-800 shadow-xl flex items-center justify-center min-h-[420px] overflow-hidden">
             <canvas
               ref={canvasRef}
@@ -1321,6 +1328,7 @@ export default function MemeGeneratorPage() {
                 <span>+ Add Overlay PNG</span>
               </button>
             </div>
+          </div>
 
             <input
               ref={bgFileInputRef}
@@ -1360,80 +1368,94 @@ export default function MemeGeneratorPage() {
               </button>
             </div>
           </div>
+
+          {/* Quick Tool Shortcut Bar */}
+          <div className="w-full mt-4 p-2 bg-white rounded-2xl border border-gray-100 shadow-2xs flex items-center justify-around overflow-x-auto no-scrollbar gap-1">
+            {[
+              { id: 'text', icon: '📝', label: 'Text' },
+              { id: 'layout', icon: '📐', label: 'Layout' },
+              { id: 'emoji', icon: '😀', label: 'Emoji' },
+              { id: 'bg', icon: '🎨', label: 'Bg' },
+              { id: 'filters', icon: '📷', label: 'Filters' },
+              { id: 'watermark', icon: '🏷️', label: 'Tag' },
+            ].map((tool) => (
+              <button
+                key={tool.id}
+                onClick={() => toggleSection(tool.id as any)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 cursor-pointer whitespace-nowrap ${
+                  openSection === tool.id
+                    ? 'bg-indigo-600 text-white shadow-xs'
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                <span>{tool.icon}</span>
+                <span>{tool.label}</span>
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* Right Column: Customization & Overlay Controls */}
-        <div className="lg:col-span-5 flex flex-col gap-6">
+        {/* Right Column: Customization & Overlay Controls (Accordion Drawers) */}
+        <div className="lg:col-span-5 flex flex-col gap-4">
           
           {/* Preset PNG Overlay Badges */}
-          <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm">
-            <span className="text-xs font-bold text-gray-700 block mb-2">Quick Preset Overlay PNGs:</span>
-            <div className="flex flex-wrap gap-2">
+          <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-2xs">
+            <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block mb-2">Quick Preset Overlays:</span>
+            <div className="flex flex-wrap gap-1.5">
               {PRESET_OVERLAYS.map((preset) => (
                 <button
                   key={preset.name}
                   onClick={() => addOverlayLayer(preset.url, preset.name)}
-                  className="px-3 py-1.5 rounded-xl bg-gray-50 hover:bg-purple-50 border border-gray-200 hover:border-purple-300 text-xs font-bold text-gray-700 hover:text-purple-600 transition-all flex items-center gap-1.5 cursor-pointer"
+                  className="px-2.5 py-1 rounded-xl bg-gray-50 hover:bg-purple-50 border border-gray-200 hover:border-purple-300 text-xs font-bold text-gray-700 hover:text-purple-600 transition-all flex items-center gap-1 cursor-pointer"
                 >
-                  <span className="text-sm">+</span>
+                  <span className="text-xs">+</span>
                   <span>{preset.name}</span>
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Active Overlay Layer Inspector */}
+          {/* Active Overlay Layer Inspector (shows when layer is clicked) */}
           {activeLayer && (
             <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-purple-50/60 p-6 rounded-3xl border border-purple-200/80 shadow-xs flex flex-col gap-4"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="bg-purple-900 text-white p-5 rounded-3xl shadow-xl flex flex-col gap-3 border border-purple-800"
             >
-              <div className="flex items-center justify-between border-b border-purple-200/60 pb-3">
+              <div className="flex items-center justify-between border-b border-purple-800/80 pb-2">
                 <div className="flex items-center gap-2">
-                  <Layers className="w-4 h-4 text-purple-600" />
-                  <span className="font-bold text-xs text-purple-900">
-                    Selected Image Layer: <span className="text-purple-600 font-extrabold">{activeLayer.name}</span>
-                  </span>
+                  <Layers className="w-4 h-4 text-purple-300" />
+                  <span className="font-bold text-xs">Active Layer: {activeLayer.name}</span>
                 </div>
-
                 <button
                   onClick={deleteActiveLayer}
-                  className="flex items-center gap-1 text-xs font-bold text-rose-600 hover:text-rose-700 bg-rose-50 px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 text-[11px] font-bold transition-colors cursor-pointer"
                 >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  <span>Delete Layer</span>
+                  <Trash2 className="w-3 h-3" />
+                  <span>Remove</span>
                 </button>
               </div>
 
-              {/* Zoom / Scale Control */}
-              <div>
-                <div className="flex items-center justify-between text-xs font-bold text-gray-700 mb-1">
-                  <span className="flex items-center gap-1">
-                    <ZoomIn className="w-3.5 h-3.5 text-purple-600" />
-                    Zoom / Scale
-                  </span>
-                  <span>{Math.round(activeLayer.scale * 100)}%</span>
-                </div>
-                <input
-                  type="range"
-                  min="0.2"
-                  max="3.0"
-                  step="0.05"
-                  value={activeLayer.scale}
-                  onChange={(e) => updateActiveLayer({ scale: Number(e.target.value) })}
-                  className="w-full accent-purple-600"
-                />
-              </div>
-
-              {/* Rotation & Opacity Controls */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-3 pt-1">
                 <div>
-                  <div className="flex items-center justify-between text-xs font-bold text-gray-700 mb-1">
-                    <span className="flex items-center gap-1">
-                      <RotateCw className="w-3.5 h-3.5 text-purple-600" />
-                      Rotate
-                    </span>
+                  <div className="flex items-center justify-between text-xs font-bold text-purple-200 mb-1">
+                    <span className="flex items-center gap-1"><ZoomIn className="w-3.5 h-3.5" /> Scale</span>
+                    <span>{Math.round(activeLayer.scale * 100)}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0.2"
+                    max="3.0"
+                    step="0.05"
+                    value={activeLayer.scale}
+                    onChange={(e) => updateActiveLayer({ scale: Number(e.target.value) })}
+                    className="w-full accent-purple-400"
+                  />
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between text-xs font-bold text-purple-200 mb-1">
+                    <span className="flex items-center gap-1"><RotateCw className="w-3.5 h-3.5" /> Rotate</span>
                     <span>{activeLayer.rotation}°</span>
                   </div>
                   <input
@@ -1442,16 +1464,13 @@ export default function MemeGeneratorPage() {
                     max="180"
                     value={activeLayer.rotation}
                     onChange={(e) => updateActiveLayer({ rotation: Number(e.target.value) })}
-                    className="w-full accent-purple-600"
+                    className="w-full accent-purple-400"
                   />
                 </div>
 
                 <div>
-                  <div className="flex items-center justify-between text-xs font-bold text-gray-700 mb-1">
-                    <span className="flex items-center gap-1">
-                      <Eye className="w-3.5 h-3.5 text-purple-600" />
-                      Opacity
-                    </span>
+                  <div className="flex items-center justify-between text-xs font-bold text-purple-200 mb-1">
+                    <span className="flex items-center gap-1"><Eye className="w-3.5 h-3.5" /> Opacity</span>
                     <span>{Math.round(activeLayer.opacity * 100)}%</span>
                   </div>
                   <input
@@ -1461,858 +1480,839 @@ export default function MemeGeneratorPage() {
                     step="0.05"
                     value={activeLayer.opacity}
                     onChange={(e) => updateActiveLayer({ opacity: Number(e.target.value) })}
-                    className="w-full accent-purple-600"
+                    className="w-full accent-purple-400"
                   />
                 </div>
               </div>
             </motion.div>
           )}
 
-          {/* Layout Mode Selector (Classic Meme vs Twitter Card) */}
-          <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm flex flex-col gap-3">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-gray-700">Meme Layout Style</span>
-              <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md">
-                {layoutMode === 'standard' ? 'Classic Top-Bottom' : 'Twitter / X Card'}
-              </span>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                onClick={() => {
-                  setLayoutMode('standard');
-                  pushHistorySnapshot();
-                }}
-                className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
-                  layoutMode === 'standard'
-                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
-                    : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'
-                }`}
-              >
-                🖼️ Classic Meme
-              </button>
-              <button
-                onClick={() => {
-                  setLayoutMode('twitter-card');
-                  pushHistorySnapshot();
-                }}
-                className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
-                  layoutMode === 'twitter-card'
-                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
-                    : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'
-                }`}
-              >
-                🐦 Twitter / X Card
-              </button>
-            </div>
-
-            {layoutMode === 'twitter-card' && (
-              <div className="grid grid-cols-2 gap-3 pt-2 border-t border-gray-100">
-                <div>
-                  <label className="block text-[11px] font-bold text-gray-600 mb-1">Author Name</label>
-                  <input
-                    type="text"
-                    value={twitterName}
-                    onChange={(e) => setTwitterName(e.target.value)}
-                    onBlur={() => pushHistorySnapshot()}
-                    className="w-full px-3 py-1.5 rounded-xl border border-gray-200 text-xs font-bold text-gray-800"
-                  />
+          {/* 1. Text & Typography Accordion Drawer */}
+          <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden transition-all">
+            <button
+              onClick={() => toggleSection('text')}
+              className="w-full flex items-center justify-between p-5 bg-white hover:bg-gray-50/80 transition-colors cursor-pointer text-left"
+            >
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600">
+                  <Type className="w-4 h-4" />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-bold text-gray-600 mb-1">@Handle</label>
-                  <input
-                    type="text"
-                    value={twitterHandle}
-                    onChange={(e) => setTwitterHandle(e.target.value)}
-                    onBlur={() => pushHistorySnapshot()}
-                    className="w-full px-3 py-1.5 rounded-xl border border-gray-200 text-xs font-bold text-gray-800"
-                  />
+                  <h3 className="font-bold text-gray-900 text-sm">Text & Typography</h3>
+                  <p className="text-[11px] font-medium text-gray-500">Edit Top & Bottom Captions, Fonts & Glow</p>
                 </div>
               </div>
-            )}
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-lg">
+                  {topText ? 'Top' : ''}{topText && bottomText ? ' & ' : ''}{bottomText ? 'Bottom' : ''} Text
+                </span>
+                {openSection === 'text' ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+              </div>
+            </button>
+
+            <AnimatePresence>
+              {openSection === 'text' && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="p-5 pt-0 border-t border-gray-100 flex flex-col gap-4"
+                >
+                  {/* Sync & Reset bar */}
+                  <div className="flex items-center justify-end gap-2 pt-3">
+                    <button
+                      onClick={() => {
+                        if (selectedTextTarget === 'top') setBottomStyle({ ...topStyle });
+                        else setTopStyle({ ...bottomStyle });
+                        pushHistorySnapshot();
+                      }}
+                      className="text-[11px] font-bold text-gray-600 hover:text-indigo-600 bg-gray-100 hover:bg-indigo-50 px-2 py-1 rounded-lg transition-colors cursor-pointer"
+                    >
+                      Sync Styles
+                    </button>
+                    <button
+                      onClick={() => {
+                        setTopTextPos({ x: 50, y: 12 });
+                        setBottomTextPos({ x: 50, y: 88 });
+                        pushHistorySnapshot();
+                      }}
+                      className="text-[11px] font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100/70 px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
+                    >
+                      Reset Positions
+                    </button>
+                  </div>
+
+                  {/* Top Text Input */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-xs font-bold text-gray-700">Top Text</label>
+                      {topText.trim() && (
+                        <button onClick={() => { setTopText(''); pushHistorySnapshot(); }} className="flex items-center gap-1 text-[11px] font-bold text-rose-600 hover:text-rose-700 cursor-pointer">
+                          <Trash2 className="w-3 h-3" /> Clear Text
+                        </button>
+                      )}
+                    </div>
+                    <div className="relative flex items-center">
+                      <input
+                        type="text"
+                        value={topText}
+                        onFocus={() => { setSelectedTextTarget('top'); setActiveLayerId(null); }}
+                        onChange={(e) => setTopText(e.target.value)}
+                        onBlur={() => pushHistorySnapshot()}
+                        placeholder="Top caption..."
+                        className={`w-full px-3.5 py-2.5 pr-8 rounded-xl border text-xs font-bold text-gray-900 focus:outline-hidden transition-all ${selectedTextTarget === 'top' ? 'border-indigo-500 ring-2 ring-indigo-500/20 bg-indigo-50/20' : 'border-gray-200'}`}
+                      />
+                      {topText.trim() && (
+                        <button onClick={() => { setTopText(''); pushHistorySnapshot(); }} className="absolute right-2.5 p-1 text-gray-400 hover:text-rose-600 transition-colors">
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Bottom Text Input */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-xs font-bold text-gray-700">Bottom Text</label>
+                      {bottomText.trim() && (
+                        <button onClick={() => { setBottomText(''); pushHistorySnapshot(); }} className="flex items-center gap-1 text-[11px] font-bold text-rose-600 hover:text-rose-700 cursor-pointer">
+                          <Trash2 className="w-3 h-3" /> Clear Text
+                        </button>
+                      )}
+                    </div>
+                    <div className="relative flex items-center">
+                      <input
+                        type="text"
+                        value={bottomText}
+                        onFocus={() => { setSelectedTextTarget('bottom'); setActiveLayerId(null); }}
+                        onChange={(e) => setBottomText(e.target.value)}
+                        onBlur={() => pushHistorySnapshot()}
+                        placeholder="Bottom caption..."
+                        className={`w-full px-3.5 py-2.5 pr-8 rounded-xl border text-xs font-bold text-gray-900 focus:outline-hidden transition-all ${selectedTextTarget === 'bottom' ? 'border-indigo-500 ring-2 ring-indigo-500/20 bg-indigo-50/20' : 'border-gray-200'}`}
+                      />
+                      {bottomText.trim() && (
+                        <button onClick={() => { setBottomText(''); pushHistorySnapshot(); }} className="absolute right-2.5 p-1 text-gray-400 hover:text-rose-600 transition-colors">
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Target Selection Selector Tabs */}
+                  <div className="flex items-center gap-1.5 bg-gray-100 p-1.5 rounded-2xl">
+                    <button
+                      onClick={() => { setSelectedTextTarget('top'); setActiveLayerId(null); }}
+                      className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${selectedTextTarget === 'top' ? 'bg-white text-indigo-600 shadow-2xs ring-1 ring-black/5' : 'text-gray-600 hover:text-gray-900'}`}
+                    >
+                      Style Top Text
+                    </button>
+                    <button
+                      onClick={() => { setSelectedTextTarget('bottom'); setActiveLayerId(null); }}
+                      className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${selectedTextTarget === 'bottom' ? 'bg-white text-indigo-600 shadow-2xs ring-1 ring-black/5' : 'text-gray-600 hover:text-gray-900'}`}
+                    >
+                      Style Bottom Text
+                    </button>
+                  </div>
+
+                  {/* Font Family & Size */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-gray-700 mb-1">Font Family</label>
+                      <select
+                        value={activeStyle.fontFamily}
+                        onChange={(e) => { updateActiveTextStyle({ fontFamily: e.target.value }); pushHistorySnapshot(); }}
+                        className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs font-bold text-gray-800 bg-white"
+                      >
+                        <optgroup label="English Fonts">
+                          <option value="Impact">Impact (Classic Meme)</option>
+                          <option value="Bebas Neue">Bebas Neue (Bold Display)</option>
+                          <option value="Outfit">Outfit (Modern)</option>
+                          <option value="Cinzel">Cinzel (Luxury Serif)</option>
+                          <option value="Pacifico">Pacifico (Handwritten Script)</option>
+                          <option value="Inter">Inter (Sans)</option>
+                          <option value="Comic Sans MS">Comic Sans</option>
+                        </optgroup>
+                        <optgroup label="Sinhala Fonts (සිංහල)">
+                          <option value="Gemunu Libre">ගැමුණු (Gemunu Libre Bold)</option>
+                          <option value="Noto Sans Sinhala">නොටෝ (Noto Sans Sinhala)</option>
+                          <option value="Abhaya Libre">අභය (Abhaya Libre Serif)</option>
+                        </optgroup>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-gray-700 mb-1">Font Size: {activeStyle.fontSize}px</label>
+                      <input
+                        type="range"
+                        min="24"
+                        max="96"
+                        value={activeStyle.fontSize}
+                        onChange={(e) => updateActiveTextStyle({ fontSize: Number(e.target.value) })}
+                        onMouseUp={() => pushHistorySnapshot()}
+                        className="w-full accent-indigo-600 mt-2"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Text Color & Stroke Color */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-gray-700 mb-1">Text Color</label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={activeStyle.textColor}
+                          onChange={(e) => { updateActiveTextStyle({ textColor: e.target.value }); pushHistorySnapshot(); }}
+                          className="w-9 h-9 rounded-lg border border-gray-200 cursor-pointer p-0.5"
+                        />
+                        <span className="font-mono text-xs font-bold text-gray-700">{activeStyle.textColor}</span>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-gray-700 mb-1">Stroke Color</label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={activeStyle.strokeColor}
+                          onChange={(e) => { updateActiveTextStyle({ strokeColor: e.target.value }); pushHistorySnapshot(); }}
+                          className="w-9 h-9 rounded-lg border border-gray-200 cursor-pointer p-0.5"
+                        />
+                        <span className="font-mono text-xs font-bold text-gray-700">{activeStyle.strokeColor}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Stroke Width & Uppercase Toggle */}
+                  <div className="grid grid-cols-2 gap-4 items-center">
+                    <div>
+                      <label className="block text-xs font-bold text-gray-700 mb-1">Stroke Width: {activeStyle.strokeWidth}px</label>
+                      <input
+                        type="range"
+                        min="0"
+                        max="16"
+                        value={activeStyle.strokeWidth}
+                        onChange={(e) => updateActiveTextStyle({ strokeWidth: Number(e.target.value) })}
+                        onMouseUp={() => pushHistorySnapshot()}
+                        className="w-full accent-indigo-600"
+                      />
+                    </div>
+
+                    <div className="flex items-center gap-2 mt-4">
+                      <input
+                        type="checkbox"
+                        id="uppercaseToggle"
+                        checked={activeStyle.isUppercase}
+                        onChange={(e) => { updateActiveTextStyle({ isUppercase: e.target.checked }); pushHistorySnapshot(); }}
+                        className="w-4 h-4 rounded-sm text-indigo-600 accent-indigo-600 cursor-pointer"
+                      />
+                      <label htmlFor="uppercaseToggle" className="text-xs font-bold text-gray-700 cursor-pointer select-none">
+                        UPPERCASE
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Drop Shadow & Neon Glow */}
+                  <div className="pt-3 border-t border-gray-100 space-y-3">
+                    <span className="text-xs font-bold text-gray-700 block">Text Shadow / Outer Glow</span>
+                    <div className="grid grid-cols-2 gap-3 items-center">
+                      <div>
+                        <label className="block text-[11px] font-bold text-gray-600 mb-1">Glow Color</label>
+                        <input
+                          type="color"
+                          value={activeStyle.shadowColor}
+                          onChange={(e) => { updateActiveTextStyle({ shadowColor: e.target.value }); pushHistorySnapshot(); }}
+                          className="w-full h-8 rounded-lg border border-gray-200 cursor-pointer p-0.5"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-bold text-gray-600 mb-1">Blur Radius: {activeStyle.shadowBlur}px</label>
+                        <input
+                          type="range"
+                          min="0"
+                          max="24"
+                          value={activeStyle.shadowBlur}
+                          onChange={(e) => updateActiveTextStyle({ shadowBlur: Number(e.target.value) })}
+                          onMouseUp={() => pushHistorySnapshot()}
+                          className="w-full accent-indigo-600"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
-          {/* Typography & Independent Text Styling Controls */}
-          <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex flex-col gap-5">
-            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-              <div className="flex items-center gap-2">
-                <Type className="w-4 h-4 text-indigo-600" />
-                <h3 className="font-bold text-gray-900 text-sm">Text & Typography</h3>
-              </div>
-              
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => {
-                    if (selectedTextTarget === 'top') setBottomStyle({ ...topStyle });
-                    else setTopStyle({ ...bottomStyle });
-                    pushHistorySnapshot();
-                  }}
-                  className="text-[11px] font-bold text-gray-600 hover:text-indigo-600 bg-gray-100 hover:bg-indigo-50 px-2 py-1 rounded-lg transition-colors cursor-pointer"
-                  title="Copy current style to the other text element"
-                >
-                  Sync Styles
-                </button>
-
-                <button
-                  onClick={() => {
-                    setTopTextPos({ x: 50, y: 12 });
-                    setBottomTextPos({ x: 50, y: 88 });
-                    pushHistorySnapshot();
-                  }}
-                  className="text-[11px] font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100/70 px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
-                >
-                  Reset Positions
-                </button>
-              </div>
-            </div>
-
-            {/* Top Text Input & Clear Button */}
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="block text-xs font-bold text-gray-700">Top Text</label>
-                {topText.trim() && (
-                  <button
-                    onClick={() => {
-                      setTopText('');
-                      pushHistorySnapshot();
-                    }}
-                    className="flex items-center gap-1 text-[11px] font-bold text-rose-600 hover:text-rose-700 cursor-pointer"
-                  >
-                    <Trash2 className="w-3 h-3" />
-                    <span>Clear Text</span>
-                  </button>
-                )}
-              </div>
-              <div className="relative flex items-center">
-                <input
-                  type="text"
-                  value={topText}
-                  onFocus={() => {
-                    setSelectedTextTarget('top');
-                    setActiveLayerId(null);
-                  }}
-                  onChange={(e) => setTopText(e.target.value)}
-                  onBlur={() => pushHistorySnapshot()}
-                  placeholder="Top caption..."
-                  className={`w-full px-3.5 py-2.5 pr-8 rounded-xl border text-xs font-bold text-gray-900 focus:outline-hidden transition-all ${
-                    selectedTextTarget === 'top'
-                      ? 'border-indigo-500 ring-2 ring-indigo-500/20 bg-indigo-50/20'
-                      : 'border-gray-200'
-                  }`}
-                />
-                {topText.trim() && (
-                  <button
-                    onClick={() => {
-                      setTopText('');
-                      pushHistorySnapshot();
-                    }}
-                    className="absolute right-2.5 p-1 text-gray-400 hover:text-rose-600 transition-colors"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Bottom Text Input & Clear Button */}
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="block text-xs font-bold text-gray-700">Bottom Text</label>
-                {bottomText.trim() && (
-                  <button
-                    onClick={() => {
-                      setBottomText('');
-                      pushHistorySnapshot();
-                    }}
-                    className="flex items-center gap-1 text-[11px] font-bold text-rose-600 hover:text-rose-700 cursor-pointer"
-                  >
-                    <Trash2 className="w-3 h-3" />
-                    <span>Clear Text</span>
-                  </button>
-                )}
-              </div>
-              <div className="relative flex items-center">
-                <input
-                  type="text"
-                  value={bottomText}
-                  onFocus={() => {
-                    setSelectedTextTarget('bottom');
-                    setActiveLayerId(null);
-                  }}
-                  onChange={(e) => setBottomText(e.target.value)}
-                  onBlur={() => pushHistorySnapshot()}
-                  placeholder="Bottom caption..."
-                  className={`w-full px-3.5 py-2.5 pr-8 rounded-xl border text-xs font-bold text-gray-900 focus:outline-hidden transition-all ${
-                    selectedTextTarget === 'bottom'
-                      ? 'border-indigo-500 ring-2 ring-indigo-500/20 bg-indigo-50/20'
-                      : 'border-gray-200'
-                  }`}
-                />
-                {bottomText.trim() && (
-                  <button
-                    onClick={() => {
-                      setBottomText('');
-                      pushHistorySnapshot();
-                    }}
-                    className="absolute right-2.5 p-1 text-gray-400 hover:text-rose-600 transition-colors"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Target Selection Selector Tabs */}
-            <div className="flex items-center gap-1.5 bg-gray-100 p-1.5 rounded-2xl">
-              <button
-                onClick={() => {
-                  setSelectedTextTarget('top');
-                  setActiveLayerId(null);
-                }}
-                className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                  selectedTextTarget === 'top'
-                    ? 'bg-white text-indigo-600 shadow-2xs ring-1 ring-black/5'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                Style Top Text
-              </button>
-              <button
-                onClick={() => {
-                  setSelectedTextTarget('bottom');
-                  setActiveLayerId(null);
-                }}
-                className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                  selectedTextTarget === 'bottom'
-                    ? 'bg-white text-indigo-600 shadow-2xs ring-1 ring-black/5'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                Style Bottom Text
-              </button>
-            </div>
-
-            {/* Font Family & Size */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">Font Family</label>
-                <select
-                  value={activeStyle.fontFamily}
-                  onChange={(e) => {
-                    updateActiveTextStyle({ fontFamily: e.target.value });
-                    pushHistorySnapshot();
-                  }}
-                  className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs font-bold text-gray-800 bg-white"
-                >
-                  <optgroup label="English Fonts">
-                    <option value="Impact">Impact (Classic Meme)</option>
-                    <option value="Bebas Neue">Bebas Neue (Bold Display)</option>
-                    <option value="Outfit">Outfit (Modern)</option>
-                    <option value="Cinzel">Cinzel (Luxury Serif)</option>
-                    <option value="Pacifico">Pacifico (Handwritten Script)</option>
-                    <option value="Inter">Inter (Sans)</option>
-                    <option value="Comic Sans MS">Comic Sans</option>
-                  </optgroup>
-                  <optgroup label="Sinhala Fonts (සිංහල)">
-                    <option value="Gemunu Libre">ගැමුණු (Gemunu Libre Bold)</option>
-                    <option value="Noto Sans Sinhala">නොටෝ (Noto Sans Sinhala)</option>
-                    <option value="Abhaya Libre">අභය (Abhaya Libre Serif)</option>
-                  </optgroup>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">Font Size: {activeStyle.fontSize}px</label>
-                <input
-                  type="range"
-                  min="24"
-                  max="96"
-                  value={activeStyle.fontSize}
-                  onChange={(e) => updateActiveTextStyle({ fontSize: Number(e.target.value) })}
-                  onMouseUp={() => pushHistorySnapshot()}
-                  className="w-full accent-indigo-600 mt-2"
-                />
-              </div>
-            </div>
-
-            {/* Text Color & Outline Stroke */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">Text Color</label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="color"
-                    value={activeStyle.textColor}
-                    onChange={(e) => {
-                      updateActiveTextStyle({ textColor: e.target.value });
-                      pushHistorySnapshot();
-                    }}
-                    className="w-9 h-9 rounded-lg border border-gray-200 cursor-pointer p-0.5"
-                  />
-                  <span className="font-mono text-xs font-bold text-gray-700">{activeStyle.textColor}</span>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">Stroke Color</label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="color"
-                    value={activeStyle.strokeColor}
-                    onChange={(e) => {
-                      updateActiveTextStyle({ strokeColor: e.target.value });
-                      pushHistorySnapshot();
-                    }}
-                    className="w-9 h-9 rounded-lg border border-gray-200 cursor-pointer p-0.5"
-                  />
-                  <span className="font-mono text-xs font-bold text-gray-700">{activeStyle.strokeColor}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Stroke Thickness & Uppercase */}
-            <div className="grid grid-cols-2 gap-4 items-center">
-              <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">Stroke Width: {activeStyle.strokeWidth}px</label>
-                <input
-                  type="range"
-                  min="0"
-                  max="16"
-                  value={activeStyle.strokeWidth}
-                  onChange={(e) => updateActiveTextStyle({ strokeWidth: Number(e.target.value) })}
-                  onMouseUp={() => pushHistorySnapshot()}
-                  className="w-full accent-indigo-600"
-                />
-              </div>
-
-              <div className="flex items-center gap-2 mt-4">
-                <input
-                  type="checkbox"
-                  id="uppercaseToggle"
-                  checked={activeStyle.isUppercase}
-                  onChange={(e) => {
-                    updateActiveTextStyle({ isUppercase: e.target.checked });
-                    pushHistorySnapshot();
-                  }}
-                  className="w-4 h-4 rounded-sm text-indigo-600 accent-indigo-600 cursor-pointer"
-                />
-                <label htmlFor="uppercaseToggle" className="text-xs font-bold text-gray-700 cursor-pointer select-none">
-                  UPPERCASE
-                </label>
-              </div>
-            </div>
-
-            {/* Feature 2: Drop Shadow & Neon Glow */}
-            <div className="pt-3 border-t border-gray-100 space-y-3">
-              <span className="text-xs font-bold text-gray-700 block">Text Shadow / Outer Glow</span>
-              <div className="grid grid-cols-2 gap-3 items-center">
-                <div>
-                  <label className="block text-[11px] font-bold text-gray-600 mb-1">Glow Color</label>
-                  <input
-                    type="color"
-                    value={activeStyle.shadowColor}
-                    onChange={(e) => {
-                      updateActiveTextStyle({ shadowColor: e.target.value });
-                      pushHistorySnapshot();
-                    }}
-                    className="w-full h-8 rounded-lg border border-gray-200 cursor-pointer p-0.5"
-                  />
+          {/* 2. Layout & Aspect Ratio Accordion Drawer */}
+          <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden transition-all">
+            <button
+              onClick={() => toggleSection('layout')}
+              className="w-full flex items-center justify-between p-5 bg-white hover:bg-gray-50/80 transition-colors cursor-pointer text-left"
+            >
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-purple-50 border border-purple-100 flex items-center justify-center text-purple-600">
+                  <LayoutTemplate className="w-4 h-4" />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-bold text-gray-600 mb-1">Blur Radius: {activeStyle.shadowBlur}px</label>
-                  <input
-                    type="range"
-                    min="0"
-                    max="24"
-                    value={activeStyle.shadowBlur}
-                    onChange={(e) => updateActiveTextStyle({ shadowBlur: Number(e.target.value) })}
-                    onMouseUp={() => pushHistorySnapshot()}
-                    className="w-full accent-indigo-600"
-                  />
+                  <h3 className="font-bold text-gray-900 text-sm">Layout & Aspect Ratio</h3>
+                  <p className="text-[11px] font-medium text-gray-500">Classic Meme vs Twitter Card & Aspect Ratios</p>
                 </div>
               </div>
-            </div>
-
-            {/* Aspect Ratio Presets */}
-            <div>
-              <label className="block text-xs font-bold text-gray-700 mb-2">Aspect Ratio</label>
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-                {[
-                  { id: '16:9', label: '16:9 Header' },
-                  { id: '9:16', label: '9:16 Story' },
-                  { id: '1:1', label: '1:1 Square' },
-                  { id: '4:5', label: '4:5 Portrait' },
-                  { id: 'original', label: 'Original' },
-                ].map((ratio) => (
-                  <button
-                    key={ratio.id}
-                    onClick={() => {
-                      setAspectRatio(ratio.id as any);
-                      pushHistorySnapshot();
-                    }}
-                    className={`py-2 px-1 rounded-xl text-[11px] font-bold border transition-all cursor-pointer ${
-                      aspectRatio === ratio.id
-                        ? 'bg-indigo-50 border-indigo-500 text-indigo-700 shadow-2xs'
-                        : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
-                    }`}
-                  >
-                    {ratio.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Windows-style Emoji & Sticker Picker Modal Popover */}
-            <div className="relative">
-              <div className="flex items-center justify-between mb-2">
-                <label className="block text-xs font-bold text-gray-700">Add Badge / Emoji Sticker</label>
-                <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md">
-                  Draggable & Pinch-Zoom
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold text-purple-600 bg-purple-50 px-2.5 py-1 rounded-lg">
+                  {aspectRatio} • {layoutMode === 'standard' ? 'Classic' : 'Twitter'}
                 </span>
+                {openSection === 'layout' ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
               </div>
+            </button>
 
-              {/* Picker Toggle Button */}
-              <button
-                onClick={() => setIsEmojiPickerOpen((prev) => !prev)}
-                className="w-full flex items-center justify-between px-4 py-3 rounded-2xl bg-gradient-to-r from-slate-900 to-indigo-950 text-white font-bold text-xs shadow-md shadow-slate-900/10 hover:shadow-lg transition-all cursor-pointer border border-slate-800"
-              >
-                <div className="flex items-center gap-2">
-                  <Smile className="w-4 h-4 text-indigo-400" />
-                  <span>Open Emoji & Sticker Picker...</span>
-                </div>
-                <div className="flex items-center gap-1 bg-white/10 px-2.5 py-1 rounded-lg text-[11px] font-mono text-indigo-200">
-                  <span>😀 150+ Emojis</span>
-                </div>
-              </button>
-
-              {/* Toast Notification */}
-              {emojiAddedToast && (
-                <div className="mt-2 text-center text-xs font-bold text-emerald-600 bg-emerald-50 border border-emerald-200/80 px-3 py-1.5 rounded-xl shadow-2xs">
-                  ✨ Added {emojiAddedToast} sticker to canvas! (Drag or Pinch to resize)
-                </div>
-              )}
-
-              {/* Windows Emoji Picker Popover Window */}
-              <AnimatePresence>
-                {isEmojiPickerOpen && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.95, y: -5 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.95, y: -5 }}
-                    className="mt-2 bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden z-50 flex flex-col text-slate-100 max-h-[460px] w-full"
-                  >
-                    {/* Title Bar */}
-                    <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800 bg-slate-950/60">
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-xs text-slate-200">Emoji and more</span>
-                        <span className="text-[10px] font-mono text-slate-400 bg-slate-800 px-1.5 py-0.5 rounded">
-                          Win+. Style
-                        </span>
-                      </div>
+            <AnimatePresence>
+              {openSection === 'layout' && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="p-5 pt-0 border-t border-gray-100 flex flex-col gap-4"
+                >
+                  {/* Meme Layout Style Switcher */}
+                  <div className="pt-3 flex flex-col gap-2">
+                    <span className="text-xs font-bold text-gray-700">Layout Style</span>
+                    <div className="grid grid-cols-2 gap-2">
                       <button
-                        onClick={() => setIsEmojiPickerOpen(false)}
-                        className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+                        onClick={() => { setLayoutMode('standard'); pushHistorySnapshot(); }}
+                        className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all cursor-pointer ${layoutMode === 'standard' ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs' : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'}`}
                       >
-                        <X className="w-4 h-4" />
+                        🖼️ Classic Meme
+                      </button>
+                      <button
+                        onClick={() => { setLayoutMode('twitter-card'); pushHistorySnapshot(); }}
+                        className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all cursor-pointer ${layoutMode === 'twitter-card' ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs' : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'}`}
+                      >
+                        🐦 Twitter / X Card
                       </button>
                     </div>
 
-                    {/* Category Tabs Bar */}
-                    <div className="flex items-center justify-around px-2 py-1.5 border-b border-slate-800 bg-slate-900/90 overflow-x-auto no-scrollbar">
-                      <button
-                        onClick={() => setActiveEmojiCategory('all')}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 cursor-pointer ${
-                          activeEmojiCategory === 'all'
-                            ? 'bg-indigo-600 text-white shadow-xs'
-                            : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
-                        }`}
-                      >
-                        <span>🕒 All</span>
-                      </button>
-                      {EMOJI_CATEGORIES.map((cat) => (
+                    {layoutMode === 'twitter-card' && (
+                      <div className="grid grid-cols-2 gap-3 pt-2 border-t border-gray-100">
+                        <div>
+                          <label className="block text-[11px] font-bold text-gray-600 mb-1">Author Name</label>
+                          <input
+                            type="text"
+                            value={twitterName}
+                            onChange={(e) => setTwitterName(e.target.value)}
+                            onBlur={() => pushHistorySnapshot()}
+                            className="w-full px-3 py-1.5 rounded-xl border border-gray-200 text-xs font-bold text-gray-800"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-bold text-gray-600 mb-1">@Handle</label>
+                          <input
+                            type="text"
+                            value={twitterHandle}
+                            onChange={(e) => setTwitterHandle(e.target.value)}
+                            onBlur={() => pushHistorySnapshot()}
+                            className="w-full px-3 py-1.5 rounded-xl border border-gray-200 text-xs font-bold text-gray-800"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Aspect Ratio Presets */}
+                  <div className="pt-2 border-t border-gray-100">
+                    <label className="block text-xs font-bold text-gray-700 mb-2">Aspect Ratio Presets</label>
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                      {[
+                        { id: '16:9', label: '16:9 Header' },
+                        { id: '9:16', label: '9:16 Story' },
+                        { id: '1:1', label: '1:1 Square' },
+                        { id: '4:5', label: '4:5 Portrait' },
+                        { id: 'original', label: 'Original' },
+                      ].map((ratio) => (
                         <button
-                          key={cat.id}
-                          onClick={() => setActiveEmojiCategory(cat.id)}
-                          title={cat.name}
-                          className={`px-3 py-1.5 rounded-xl text-sm transition-all flex items-center justify-center cursor-pointer ${
-                            activeEmojiCategory === cat.id
-                              ? 'bg-indigo-600 text-white shadow-xs border-b-2 border-indigo-400'
-                              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
-                          }`}
+                          key={ratio.id}
+                          onClick={() => { setAspectRatio(ratio.id as any); pushHistorySnapshot(); }}
+                          className={`py-2 px-1 rounded-xl text-[11px] font-bold border transition-all cursor-pointer ${aspectRatio === ratio.id ? 'bg-indigo-50 border-indigo-500 text-indigo-700 shadow-2xs' : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'}`}
                         >
-                          <span>{cat.icon}</span>
+                          {ratio.label}
                         </button>
                       ))}
                     </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
 
-                    {/* Search Bar */}
-                    <div className="p-3 border-b border-slate-800/80 bg-slate-950/40">
-                      <div className="relative flex items-center">
-                        <Search className="w-4 h-4 text-slate-400 absolute left-3 pointer-events-none" />
+          {/* 3. Emoji & Sticker Picker Accordion Drawer */}
+          <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden transition-all">
+            <button
+              onClick={() => toggleSection('emoji')}
+              className="w-full flex items-center justify-between p-5 bg-white hover:bg-gray-50/80 transition-colors cursor-pointer text-left"
+            >
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600">
+                  <Smile className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-gray-900 text-sm">Emoji & Sticker Picker</h3>
+                  <p className="text-[11px] font-medium text-gray-500">150+ Win+. Style Searchable Emojis</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2.5 py-1 rounded-lg">
+                  150+ Emojis
+                </span>
+                {openSection === 'emoji' ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+              </div>
+            </button>
+
+            <AnimatePresence>
+              {openSection === 'emoji' && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="p-5 pt-0 border-t border-gray-100"
+                >
+                  <div className="relative pt-3">
+                    {/* Picker Toggle Button */}
+                    <button
+                      onClick={() => setIsEmojiPickerOpen((prev) => !prev)}
+                      className="w-full flex items-center justify-between px-4 py-3 rounded-2xl bg-gradient-to-r from-slate-900 to-indigo-950 text-white font-bold text-xs shadow-md shadow-slate-900/10 hover:shadow-lg transition-all cursor-pointer border border-slate-800"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Smile className="w-4 h-4 text-indigo-400" />
+                        <span>Open Emoji & Sticker Picker...</span>
+                      </div>
+                      <div className="flex items-center gap-1 bg-white/10 px-2.5 py-1 rounded-lg text-[11px] font-mono text-indigo-200">
+                        <span>😀 150+ Emojis</span>
+                      </div>
+                    </button>
+
+                    {/* Toast Notification */}
+                    {emojiAddedToast && (
+                      <div className="mt-2 text-center text-xs font-bold text-emerald-600 bg-emerald-50 border border-emerald-200/80 px-3 py-1.5 rounded-xl shadow-2xs">
+                        ✨ Added {emojiAddedToast} sticker to canvas! (Drag or Pinch to resize)
+                      </div>
+                    )}
+
+                    {/* Windows Emoji Picker Popover Window */}
+                    <AnimatePresence>
+                      {isEmojiPickerOpen && (
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.95, y: -5 }}
+                          animate={{ opacity: 1, scale: 1, y: 0 }}
+                          exit={{ opacity: 0, scale: 0.95, y: -5 }}
+                          className="mt-2 bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden z-50 flex flex-col text-slate-100 max-h-[460px] w-full"
+                        >
+                          {/* Title Bar */}
+                          <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800 bg-slate-950/60">
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-xs text-slate-200">Emoji and more</span>
+                              <span className="text-[10px] font-mono text-slate-400 bg-slate-800 px-1.5 py-0.5 rounded">
+                                Win+. Style
+                              </span>
+                            </div>
+                            <button onClick={() => setIsEmojiPickerOpen(false)} className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer">
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+
+                          {/* Category Tabs Bar */}
+                          <div className="flex items-center justify-around px-2 py-1.5 border-b border-slate-800 bg-slate-900/90 overflow-x-auto no-scrollbar">
+                            <button
+                              onClick={() => setActiveEmojiCategory('all')}
+                              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 cursor-pointer ${activeEmojiCategory === 'all' ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'}`}
+                            >
+                              <span>🕒 All</span>
+                            </button>
+                            {EMOJI_CATEGORIES.map((cat) => (
+                              <button
+                                key={cat.id}
+                                onClick={() => setActiveEmojiCategory(cat.id)}
+                                title={cat.name}
+                                className={`px-3 py-1.5 rounded-xl text-sm transition-all flex items-center justify-center cursor-pointer ${activeEmojiCategory === cat.id ? 'bg-indigo-600 text-white shadow-xs border-b-2 border-indigo-400' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'}`}
+                              >
+                                <span>{cat.icon}</span>
+                              </button>
+                            ))}
+                          </div>
+
+                          {/* Search Bar */}
+                          <div className="p-3 border-b border-slate-800/80 bg-slate-950/40">
+                            <div className="relative flex items-center">
+                              <Search className="w-4 h-4 text-slate-400 absolute left-3 pointer-events-none" />
+                              <input
+                                type="text"
+                                value={emojiSearchQuery}
+                                onChange={(e) => setEmojiSearchQuery(e.target.value)}
+                                placeholder="Search emojis..."
+                                className="w-full pl-9 pr-8 py-2 rounded-xl bg-slate-800/90 border border-slate-700/80 text-xs font-bold text-slate-100 placeholder-slate-400 focus:outline-hidden focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                              />
+                              {emojiSearchQuery && (
+                                <button onClick={() => setEmojiSearchQuery('')} className="absolute right-2.5 text-slate-400 hover:text-slate-200 cursor-pointer">
+                                  <X className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Emoji Grid Container */}
+                          <div className="p-3 overflow-y-auto max-h-[290px] space-y-4 text-left custom-scrollbar">
+                            {filteredEmojiCategories.length === 0 ? (
+                              <div className="text-center py-8 text-slate-500 text-xs font-medium">
+                                No emojis found matching "{emojiSearchQuery}"
+                              </div>
+                            ) : (
+                              filteredEmojiCategories.map(
+                                (cat) =>
+                                  cat && (
+                                    <div key={cat.id} className="space-y-2">
+                                      <h4 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider pl-1">
+                                        {cat.name}
+                                      </h4>
+                                      <div className="grid grid-cols-7 sm:grid-cols-8 gap-1.5">
+                                        {cat.emojis.map((item) => (
+                                          <button
+                                            key={item.symbol}
+                                            onClick={() => {
+                                              addEmojiSticker(item.symbol);
+                                              setEmojiAddedToast(item.symbol);
+                                              setTimeout(() => setEmojiAddedToast(null), 2500);
+                                            }}
+                                            title={item.name}
+                                            className="w-9 h-9 rounded-xl bg-slate-800/60 hover:bg-indigo-600/40 hover:border-indigo-500/80 border border-slate-800 text-xl flex items-center justify-center transition-all hover:scale-115 cursor-pointer shadow-2xs active:scale-95"
+                                          >
+                                            {item.symbol}
+                                          </button>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )
+                              )
+                            )}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+
+                    {/* Quick Pick Emoji Bar below Modal Button */}
+                    <div className="flex flex-wrap items-center gap-1.5 mt-2.5">
+                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mr-1">Quick Add:</span>
+                      {['🔥', '😂', '🚀', '💯', '👑', '🎯', '✨', '⚡', '🗿', '👀', '💪', '💰', '👍', '❤️', '🐐'].map((symbol) => (
+                        <button
+                          key={symbol}
+                          onClick={() => {
+                            addEmojiSticker(symbol);
+                            setEmojiAddedToast(symbol);
+                            setTimeout(() => setEmojiAddedToast(null), 2500);
+                          }}
+                          className="w-8 h-8 rounded-xl bg-gray-50 border border-gray-200 text-base flex items-center justify-center hover:bg-indigo-50 hover:border-indigo-400 hover:scale-110 transition-all cursor-pointer shadow-2xs"
+                        >
+                          {symbol}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* 4. Canvas Background Fill Accordion Drawer */}
+          <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden transition-all">
+            <button
+              onClick={() => toggleSection('bg')}
+              className="w-full flex items-center justify-between p-5 bg-white hover:bg-gray-50/80 transition-colors cursor-pointer text-left"
+            >
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600">
+                  <Palette className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-gray-900 text-sm">Canvas Background Fill</h3>
+                  <p className="text-[11px] font-medium text-gray-500">Photo, Solid Colors & Linear Gradients</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg uppercase">
+                  {bgType}
+                </span>
+                {openSection === 'bg' ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+              </div>
+            </button>
+
+            <AnimatePresence>
+              {openSection === 'bg' && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="p-5 pt-0 border-t border-gray-100 flex flex-col gap-4"
+                >
+                  <div className="flex gap-1.5 bg-gray-100 p-1.5 rounded-2xl pt-3">
+                    {[
+                      { id: 'photo', label: '📷 Photo' },
+                      { id: 'solid', label: '🎨 Solid' },
+                      { id: 'gradient', label: '🌈 Gradient' },
+                    ].map((tab) => (
+                      <button
+                        key={tab.id}
+                        onClick={() => { setBgType(tab.id as any); pushHistorySnapshot(); }}
+                        className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${bgType === tab.id ? 'bg-white text-indigo-600 shadow-2xs ring-1 ring-black/5' : 'text-gray-600 hover:text-gray-900'}`}
+                      >
+                        {tab.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {bgType === 'solid' && (
+                    <div className="space-y-3 pt-1">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-bold text-gray-700">Solid Color</label>
                         <input
-                          type="text"
-                          value={emojiSearchQuery}
-                          onChange={(e) => setEmojiSearchQuery(e.target.value)}
-                          placeholder="Search emojis..."
-                          className="w-full pl-9 pr-8 py-2 rounded-xl bg-slate-800/90 border border-slate-700/80 text-xs font-bold text-slate-100 placeholder-slate-400 focus:outline-hidden focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                          type="color"
+                          value={solidBgColor}
+                          onChange={(e) => { setSolidBgColor(e.target.value); pushHistorySnapshot(); }}
+                          className="w-8 h-8 rounded-lg border border-gray-200 cursor-pointer p-0.5"
                         />
-                        {emojiSearchQuery && (
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {['#0f172a', '#1e1b4b', '#831843', '#064e3b', '#451a03', '#ffffff', '#000000'].map((color) => (
                           <button
-                            onClick={() => setEmojiSearchQuery('')}
-                            className="absolute right-2.5 text-slate-400 hover:text-slate-200 cursor-pointer"
-                          >
-                            <X className="w-3.5 h-3.5" />
-                          </button>
-                        )}
+                            key={color}
+                            onClick={() => { setSolidBgColor(color); pushHistorySnapshot(); }}
+                            className="w-7 h-7 rounded-lg border border-black/10 shadow-2xs cursor-pointer hover:scale-110 transition-transform"
+                            style={{ backgroundColor: color }}
+                          />
+                        ))}
                       </div>
                     </div>
+                  )}
 
-                    {/* Emoji Grid Container */}
-                    <div className="p-3 overflow-y-auto max-h-[290px] space-y-4 text-left custom-scrollbar">
-                      {filteredEmojiCategories.length === 0 ? (
-                        <div className="text-center py-8 text-slate-500 text-xs font-medium">
-                          No emojis found matching "{emojiSearchQuery}"
+                  {bgType === 'gradient' && (
+                    <div className="space-y-3 pt-1">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-[11px] font-bold text-gray-600 mb-1">Color 1</label>
+                          <input
+                            type="color"
+                            value={gradientColor1}
+                            onChange={(e) => { setGradientColor1(e.target.value); pushHistorySnapshot(); }}
+                            className="w-full h-8 rounded-lg border border-gray-200 cursor-pointer p-0.5"
+                          />
                         </div>
-                      ) : (
-                        filteredEmojiCategories.map(
-                          (cat) =>
-                            cat && (
-                              <div key={cat.id} className="space-y-2">
-                                <h4 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider pl-1">
-                                  {cat.name}
-                                </h4>
-                                <div className="grid grid-cols-7 sm:grid-cols-8 gap-1.5">
-                                  {cat.emojis.map((item) => (
-                                    <button
-                                      key={item.symbol}
-                                      onClick={() => {
-                                        addEmojiSticker(item.symbol);
-                                        setEmojiAddedToast(item.symbol);
-                                        setTimeout(() => setEmojiAddedToast(null), 2500);
-                                      }}
-                                      title={item.name}
-                                      className="w-9 h-9 rounded-xl bg-slate-800/60 hover:bg-indigo-600/40 hover:border-indigo-500/80 border border-slate-800 text-xl flex items-center justify-center transition-all hover:scale-115 cursor-pointer shadow-2xs active:scale-95"
-                                    >
-                                      {item.symbol}
-                                    </button>
-                                  ))}
-                                </div>
-                              </div>
-                            )
-                        )
-                      )}
+                        <div>
+                          <label className="block text-[11px] font-bold text-gray-600 mb-1">Color 2</label>
+                          <input
+                            type="color"
+                            value={gradientColor2}
+                            onChange={(e) => { setGradientColor2(e.target.value); pushHistorySnapshot(); }}
+                            className="w-full h-8 rounded-lg border border-gray-200 cursor-pointer p-0.5"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap gap-1.5 pt-1">
+                        {[
+                          { c1: '#4f46e5', c2: '#9333ea', name: 'Cyberpunk' },
+                          { c1: '#ff4e50', c2: '#f9d423', name: 'Sunset' },
+                          { c1: '#0f172a', c2: '#1e293b', name: 'Dark Slate' },
+                          { c1: '#059669', c2: '#10b981', name: 'Emerald' },
+                          { c1: '#ec4899', c2: '#8b5cf6', name: 'Neon Pink' },
+                        ].map((g) => (
+                          <button
+                            key={g.name}
+                            onClick={() => { setGradientColor1(g.c1); setGradientColor2(g.c2); pushHistorySnapshot(); }}
+                            title={g.name}
+                            className="w-8 h-8 rounded-xl border border-black/10 shadow-2xs cursor-pointer hover:scale-110 transition-transform"
+                            style={{ background: `linear-gradient(135deg, ${g.c1}, ${g.c2})` }}
+                          />
+                        ))}
+                      </div>
                     </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              {/* Quick Pick Emoji Bar below Modal Button */}
-              <div className="flex flex-wrap items-center gap-1.5 mt-2.5">
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mr-1">Quick Add:</span>
-                {['🔥', '😂', '🚀', '💯', '👑', '🎯', '✨', '⚡', '🗿', '👀', '💪', '💰', '👍', '❤️', '🐐'].map((symbol) => (
-                  <button
-                    key={symbol}
-                    onClick={() => {
-                      addEmojiSticker(symbol);
-                      setEmojiAddedToast(symbol);
-                      setTimeout(() => setEmojiAddedToast(null), 2500);
-                    }}
-                    className="w-8 h-8 rounded-xl bg-gray-50 border border-gray-200 text-base flex items-center justify-center hover:bg-indigo-50 hover:border-indigo-400 hover:scale-110 transition-all cursor-pointer shadow-2xs"
-                  >
-                    {symbol}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Feature 3: Solid & Gradient Background Creator */}
-            <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-gray-700">Canvas Background Fill</span>
-                <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider">{bgType}</span>
-              </div>
-
-              {/* Mode Tabs */}
-              <div className="flex gap-1.5 bg-gray-100 p-1.5 rounded-2xl">
-                {[
-                  { id: 'photo', label: '📷 Photo' },
-                  { id: 'solid', label: '🎨 Solid' },
-                  { id: 'gradient', label: '🌈 Gradient' },
-                ].map((tab) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => {
-                      setBgType(tab.id as any);
-                      pushHistorySnapshot();
-                    }}
-                    className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                      bgType === tab.id
-                        ? 'bg-white text-indigo-600 shadow-2xs ring-1 ring-black/5'
-                        : 'text-gray-600 hover:text-gray-900'
-                    }`}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
-
-              {bgType === 'solid' && (
-                <div className="space-y-3 pt-1">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-bold text-gray-700">Solid Color</label>
-                    <input
-                      type="color"
-                      value={solidBgColor}
-                      onChange={(e) => {
-                        setSolidBgColor(e.target.value);
-                        pushHistorySnapshot();
-                      }}
-                      className="w-8 h-8 rounded-lg border border-gray-200 cursor-pointer p-0.5"
-                    />
-                  </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {['#0f172a', '#1e1b4b', '#831843', '#064e3b', '#451a03', '#ffffff', '#000000'].map((color) => (
-                      <button
-                        key={color}
-                        onClick={() => {
-                          setSolidBgColor(color);
-                          pushHistorySnapshot();
-                        }}
-                        className="w-7 h-7 rounded-lg border border-black/10 shadow-2xs cursor-pointer hover:scale-110 transition-transform"
-                        style={{ backgroundColor: color }}
-                      />
-                    ))}
-                  </div>
-                </div>
+                  )}
+                </motion.div>
               )}
+            </AnimatePresence>
+          </div>
 
-              {bgType === 'gradient' && (
-                <div className="space-y-3 pt-1">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-[11px] font-bold text-gray-600 mb-1">Color 1</label>
-                      <input
-                        type="color"
-                        value={gradientColor1}
-                        onChange={(e) => {
-                          setGradientColor1(e.target.value);
-                          pushHistorySnapshot();
-                        }}
-                        className="w-full h-8 rounded-lg border border-gray-200 cursor-pointer p-0.5"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] font-bold text-gray-600 mb-1">Color 2</label>
-                      <input
-                        type="color"
-                        value={gradientColor2}
-                        onChange={(e) => {
-                          setGradientColor2(e.target.value);
-                          pushHistorySnapshot();
-                        }}
-                        className="w-full h-8 rounded-lg border border-gray-200 cursor-pointer p-0.5"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Gradient Presets */}
-                  <div className="flex flex-wrap gap-1.5 pt-1">
-                    {[
-                      { c1: '#4f46e5', c2: '#9333ea', name: 'Cyberpunk' },
-                      { c1: '#ff4e50', c2: '#f9d423', name: 'Sunset' },
-                      { c1: '#0f172a', c2: '#1e293b', name: 'Dark Slate' },
-                      { c1: '#059669', c2: '#10b981', name: 'Emerald' },
-                      { c1: '#ec4899', c2: '#8b5cf6', name: 'Neon Pink' },
-                    ].map((g) => (
-                      <button
-                        key={g.name}
-                        onClick={() => {
-                          setGradientColor1(g.c1);
-                          setGradientColor2(g.c2);
-                          pushHistorySnapshot();
-                        }}
-                        title={g.name}
-                        className="w-8 h-8 rounded-xl border border-black/10 shadow-2xs cursor-pointer hover:scale-110 transition-transform"
-                        style={{ background: `linear-gradient(135deg, ${g.c1}, ${g.c2})` }}
-                      />
-                    ))}
-                  </div>
+          {/* 5. Photo Filters & Effects Accordion Drawer */}
+          <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden transition-all">
+            <button
+              onClick={() => toggleSection('filters')}
+              className="w-full flex items-center justify-between p-5 bg-white hover:bg-gray-50/80 transition-colors cursor-pointer text-left"
+            >
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600">
+                  <Sliders className="w-4 h-4" />
                 </div>
-              )}
-            </div>
-
-            {/* Feature 1: Photo Filters & Adjustments */}
-            {bgType === 'photo' && (
-              <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-gray-700">Photo Filters & Effects</span>
-                  <button
-                    onClick={() => {
-                      setBrightness(100);
-                      setContrast(100);
-                      setSaturation(100);
-                      setBgBlur(0);
-                      setGrayscale(0);
-                      setSepia(0);
-                      pushHistorySnapshot();
-                    }}
-                    className="text-[11px] font-bold text-indigo-600 hover:text-indigo-700 cursor-pointer"
-                  >
-                    Reset Filters
-                  </button>
+                <div>
+                  <h3 className="font-bold text-gray-900 text-sm">Photo Filters & Effects</h3>
+                  <p className="text-[11px] font-medium text-gray-500">Brightness, Contrast, Blur & Presets</p>
                 </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg">
+                  {brightness !== 100 || bgBlur > 0 ? 'Custom Filter' : 'Normal'}
+                </span>
+                {openSection === 'filters' ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+              </div>
+            </button>
 
-                {/* Filter Presets */}
-                <div className="flex flex-wrap gap-1.5">
-                  {[
-                    { label: 'Dim BG', b: 60, c: 110, s: 100, blur: 4, g: 0, sep: 0 },
-                    { label: 'Cinematic', b: 105, c: 125, s: 120, blur: 0, g: 0, sep: 0 },
-                    { label: 'Vibrant', b: 110, c: 115, s: 150, blur: 0, g: 0, sep: 0 },
-                    { label: 'B&W', b: 100, c: 120, s: 100, blur: 0, g: 100, sep: 0 },
-                    { label: 'Vintage', b: 95, c: 105, s: 90, blur: 0, g: 0, sep: 80 },
-                  ].map((preset) => (
+            <AnimatePresence>
+              {openSection === 'filters' && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="p-5 pt-0 border-t border-gray-100 flex flex-col gap-4"
+                >
+                  <div className="flex items-center justify-between pt-3">
+                    <span className="text-xs font-bold text-gray-700">Filter Presets</span>
                     <button
-                      key={preset.label}
-                      onClick={() => {
-                        setBrightness(preset.b);
-                        setContrast(preset.c);
-                        setSaturation(preset.s);
-                        setBgBlur(preset.blur);
-                        setGrayscale(preset.g);
-                        setSepia(preset.sep);
-                        pushHistorySnapshot();
-                      }}
-                      className="px-2.5 py-1 rounded-xl bg-gray-50 hover:bg-indigo-50 border border-gray-200 text-xs font-bold text-gray-700 hover:text-indigo-600 transition-colors cursor-pointer"
+                      onClick={() => { setBrightness(100); setContrast(100); setSaturation(100); setBgBlur(0); setGrayscale(0); setSepia(0); pushHistorySnapshot(); }}
+                      className="text-[11px] font-bold text-indigo-600 hover:text-indigo-700 cursor-pointer"
                     >
-                      {preset.label}
+                      Reset Filters
                     </button>
-                  ))}
-                </div>
-
-                {/* Filter Sliders */}
-                <div className="grid grid-cols-2 gap-3 text-xs font-semibold text-gray-700">
-                  <div>
-                    <span>Brightness: {brightness}%</span>
-                    <input
-                      type="range"
-                      min="30"
-                      max="180"
-                      value={brightness}
-                      onChange={(e) => setBrightness(Number(e.target.value))}
-                      onMouseUp={() => pushHistorySnapshot()}
-                      className="w-full accent-indigo-600 mt-1"
-                    />
-                  </div>
-                  <div>
-                    <span>Contrast: {contrast}%</span>
-                    <input
-                      type="range"
-                      min="40"
-                      max="180"
-                      value={contrast}
-                      onChange={(e) => setContrast(Number(e.target.value))}
-                      onMouseUp={() => pushHistorySnapshot()}
-                      className="w-full accent-indigo-600 mt-1"
-                    />
-                  </div>
-                  <div>
-                    <span>Blur BG: {bgBlur}px</span>
-                    <input
-                      type="range"
-                      min="0"
-                      max="16"
-                      value={bgBlur}
-                      onChange={(e) => setBgBlur(Number(e.target.value))}
-                      onMouseUp={() => pushHistorySnapshot()}
-                      className="w-full accent-indigo-600 mt-1"
-                    />
-                  </div>
-                  <div>
-                    <span>Saturation: {saturation}%</span>
-                    <input
-                      type="range"
-                      min="0"
-                      max="200"
-                      value={saturation}
-                      onChange={(e) => setSaturation(Number(e.target.value))}
-                      onMouseUp={() => pushHistorySnapshot()}
-                      className="w-full accent-indigo-600 mt-1"
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Feature 4: Brand Watermark Tag Card */}
-            <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-gray-700">Brand Watermark Tag</span>
-                <input
-                  type="checkbox"
-                  checked={watermarkEnabled}
-                  onChange={(e) => {
-                    setWatermarkEnabled(e.target.checked);
-                    pushHistorySnapshot();
-                  }}
-                  className="w-4 h-4 rounded text-indigo-600 accent-indigo-600 cursor-pointer"
-                />
-              </div>
-
-              {watermarkEnabled && (
-                <div className="space-y-3 pt-2 border-t border-gray-100">
-                  <div>
-                    <label className="block text-[11px] font-bold text-gray-600 mb-1">Watermark Text</label>
-                    <input
-                      type="text"
-                      value={watermarkText}
-                      onChange={(e) => setWatermarkText(e.target.value)}
-                      onBlur={() => pushHistorySnapshot()}
-                      placeholder="@MyPageName"
-                      className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs font-bold text-gray-800"
-                    />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="block text-[11px] font-bold text-gray-600 mb-1">Corner Position</label>
-                      <select
-                        value={watermarkPosition}
-                        onChange={(e) => {
-                          setWatermarkPosition(e.target.value as any);
-                          pushHistorySnapshot();
-                        }}
-                        className="w-full px-2 py-1.5 rounded-xl border border-gray-200 text-xs font-bold text-gray-800 bg-white"
+                  <div className="flex flex-wrap gap-1.5">
+                    {[
+                      { label: 'Dim BG', b: 60, c: 110, s: 100, blur: 4, g: 0, sep: 0 },
+                      { label: 'Cinematic', b: 105, c: 125, s: 120, blur: 0, g: 0, sep: 0 },
+                      { label: 'Vibrant', b: 110, c: 115, s: 150, blur: 0, g: 0, sep: 0 },
+                      { label: 'B&W', b: 100, c: 120, s: 100, blur: 0, g: 100, sep: 0 },
+                      { label: 'Vintage', b: 95, c: 105, s: 90, blur: 0, g: 0, sep: 80 },
+                    ].map((preset) => (
+                      <button
+                        key={preset.label}
+                        onClick={() => { setBrightness(preset.b); setContrast(preset.c); setSaturation(preset.s); setBgBlur(preset.blur); setGrayscale(preset.g); setSepia(preset.sep); pushHistorySnapshot(); }}
+                        className="px-2.5 py-1 rounded-xl bg-gray-50 hover:bg-indigo-50 border border-gray-200 text-xs font-bold text-gray-700 hover:text-indigo-600 transition-colors cursor-pointer"
                       >
-                        <option value="bottom-right">Bottom Right</option>
-                        <option value="bottom-left">Bottom Left</option>
-                        <option value="top-right">Top Right</option>
-                        <option value="top-left">Top Left</option>
-                      </select>
+                        {preset.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 text-xs font-semibold text-gray-700 pt-1">
+                    <div>
+                      <span>Brightness: {brightness}%</span>
+                      <input type="range" min="30" max="180" value={brightness} onChange={(e) => setBrightness(Number(e.target.value))} onMouseUp={() => pushHistorySnapshot()} className="w-full accent-indigo-600 mt-1" />
                     </div>
                     <div>
-                      <label className="block text-[11px] font-bold text-gray-600 mb-1">Opacity: {Math.round(watermarkOpacity * 100)}%</label>
-                      <input
-                        type="range"
-                        min="0.2"
-                        max="1.0"
-                        step="0.1"
-                        value={watermarkOpacity}
-                        onChange={(e) => setWatermarkOpacity(Number(e.target.value))}
-                        onMouseUp={() => pushHistorySnapshot()}
-                        className="w-full accent-indigo-600 mt-1"
-                      />
+                      <span>Contrast: {contrast}%</span>
+                      <input type="range" min="40" max="180" value={contrast} onChange={(e) => setContrast(Number(e.target.value))} onMouseUp={() => pushHistorySnapshot()} className="w-full accent-indigo-600 mt-1" />
+                    </div>
+                    <div>
+                      <span>Blur BG: {bgBlur}px</span>
+                      <input type="range" min="0" max="16" value={bgBlur} onChange={(e) => setBgBlur(Number(e.target.value))} onMouseUp={() => pushHistorySnapshot()} className="w-full accent-indigo-600 mt-1" />
+                    </div>
+                    <div>
+                      <span>Saturation: {saturation}%</span>
+                      <input type="range" min="0" max="200" value={saturation} onChange={(e) => setSaturation(Number(e.target.value))} onMouseUp={() => pushHistorySnapshot()} className="w-full accent-indigo-600 mt-1" />
                     </div>
                   </div>
-                </div>
+                </motion.div>
               )}
-            </div>
+            </AnimatePresence>
+          </div>
 
+          {/* 6. Brand Watermark Tag Accordion Drawer */}
+          <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden transition-all">
+            <button
+              onClick={() => toggleSection('watermark')}
+              className="w-full flex items-center justify-between p-5 bg-white hover:bg-gray-50/80 transition-colors cursor-pointer text-left"
+            >
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-pink-50 border border-pink-100 flex items-center justify-center text-pink-600">
+                  <Sparkles className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-gray-900 text-sm">Brand Watermark Tag</h3>
+                  <p className="text-[11px] font-medium text-gray-500">Custom Brand Tag & Position</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className={`text-[10px] font-bold px-2.5 py-1 rounded-lg ${watermarkEnabled ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-100 text-gray-500'}`}>
+                  {watermarkEnabled ? watermarkText || 'Enabled' : 'Off'}
+                </span>
+                {openSection === 'watermark' ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+              </div>
+            </button>
+
+            <AnimatePresence>
+              {openSection === 'watermark' && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="p-5 pt-0 border-t border-gray-100 flex flex-col gap-3"
+                >
+                  <div className="flex items-center justify-between pt-3">
+                    <span className="text-xs font-bold text-gray-700">Enable Brand Watermark</span>
+                    <input
+                      type="checkbox"
+                      checked={watermarkEnabled}
+                      onChange={(e) => { setWatermarkEnabled(e.target.checked); pushHistorySnapshot(); }}
+                      className="w-4 h-4 rounded text-indigo-600 accent-indigo-600 cursor-pointer"
+                    />
+                  </div>
+
+                  {watermarkEnabled && (
+                    <div className="space-y-3 pt-2 border-t border-gray-100">
+                      <div>
+                        <label className="block text-[11px] font-bold text-gray-600 mb-1">Watermark Text</label>
+                        <input
+                          type="text"
+                          value={watermarkText}
+                          onChange={(e) => setWatermarkText(e.target.value)}
+                          onBlur={() => pushHistorySnapshot()}
+                          placeholder="@MyPageName"
+                          className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs font-bold text-gray-800"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-[11px] font-bold text-gray-600 mb-1">Corner Position</label>
+                          <select
+                            value={watermarkPosition}
+                            onChange={(e) => { setWatermarkPosition(e.target.value as any); pushHistorySnapshot(); }}
+                            className="w-full px-2 py-1.5 rounded-xl border border-gray-200 text-xs font-bold text-gray-800 bg-white"
+                          >
+                            <option value="bottom-right">Bottom Right</option>
+                            <option value="bottom-left">Bottom Left</option>
+                            <option value="top-right">Top Right</option>
+                            <option value="top-left">Top Left</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-bold text-gray-600 mb-1">Opacity: {Math.round(watermarkOpacity * 100)}%</label>
+                          <input
+                            type="range"
+                            min="0.2"
+                            max="1.0"
+                            step="0.1"
+                            value={watermarkOpacity}
+                            onChange={(e) => setWatermarkOpacity(Number(e.target.value))}
+                            onMouseUp={() => pushHistorySnapshot()}
+                            className="w-full accent-indigo-600 mt-1"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
         </div>
 
-      </div>
-
-    </main>
-  );
-}
+      </main>
+    );
+  }
