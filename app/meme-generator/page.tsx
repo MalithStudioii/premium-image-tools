@@ -22,6 +22,10 @@ export interface TextStyle {
   strokeColor: string;
   strokeWidth: number;
   isUppercase: boolean;
+  shadowColor: string;
+  shadowBlur: number;
+  shadowOffsetX: number;
+  shadowOffsetY: number;
 }
 
 export interface HistorySnapshot {
@@ -297,6 +301,10 @@ export default function MemeGeneratorPage() {
     strokeColor: '#000000',
     strokeWidth: 6,
     isUppercase: true,
+    shadowColor: '#000000',
+    shadowBlur: 4,
+    shadowOffsetX: 2,
+    shadowOffsetY: 2,
   });
 
   const [bottomStyle, setBottomStyle] = useState<TextStyle>({
@@ -306,12 +314,43 @@ export default function MemeGeneratorPage() {
     strokeColor: '#000000',
     strokeWidth: 6,
     isUppercase: true,
+    shadowColor: '#000000',
+    shadowBlur: 4,
+    shadowOffsetX: 2,
+    shadowOffsetY: 2,
   });
 
   const [selectedTextTarget, setSelectedTextTarget] = useState<'top' | 'bottom'>('top');
   const [selectedEmoji, setSelectedEmoji] = useState<string | null>(null);
   const [aspectRatio, setAspectRatio] = useState<'original' | '1:1' | '16:9' | '9:16' | '4:5'>('16:9');
   
+  // Feature 1: Photo Filters State
+  const [brightness, setBrightness] = useState<number>(100);
+  const [contrast, setContrast] = useState<number>(100);
+  const [saturation, setSaturation] = useState<number>(100);
+  const [bgBlur, setBgBlur] = useState<number>(0);
+  const [grayscale, setGrayscale] = useState<number>(0);
+  const [sepia, setSepia] = useState<number>(0);
+
+  // Feature 3: Solid & Gradient Background State
+  const [bgType, setBgType] = useState<'photo' | 'solid' | 'gradient'>('photo');
+  const [solidBgColor, setSolidBgColor] = useState<string>('#0f172a');
+  const [gradientColor1, setGradientColor1] = useState<string>('#4f46e5');
+  const [gradientColor2, setGradientColor2] = useState<string>('#9333ea');
+  const [gradientAngle, setGradientAngle] = useState<number>(135);
+
+  // Feature 4: Watermark / Brand Tag State
+  const [watermarkEnabled, setWatermarkEnabled] = useState<boolean>(false);
+  const [watermarkText, setWatermarkText] = useState<string>('@MemeStudio');
+  const [watermarkPosition, setWatermarkPosition] = useState<'bottom-right' | 'bottom-left' | 'top-right' | 'top-left'>('bottom-right');
+  const [watermarkOpacity, setWatermarkOpacity] = useState<number>(0.7);
+  const [watermarkColor, setWatermarkColor] = useState<string>('#ffffff');
+
+  // Feature 5: Layout Mode State (Classic Meme vs Twitter Card)
+  const [layoutMode, setLayoutMode] = useState<'standard' | 'twitter-card'>('standard');
+  const [twitterName, setTwitterName] = useState<string>('Developer');
+  const [twitterHandle, setTwitterHandle] = useState<string>('@dev_guy');
+
   // Emoji Picker Modal Popover States
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
   const [activeEmojiCategory, setActiveEmojiCategory] = useState<string>('all');
@@ -532,25 +571,89 @@ export default function MemeGeneratorPage() {
     canvas.width = targetWidth;
     canvas.height = targetHeight;
 
-    // 1. Clear & Draw background cover fill
+    // 1. Clear & Draw background fill (Photo / Solid Color / Gradient) with Photo Filters
     ctx.clearRect(0, 0, targetWidth, targetHeight);
     
-    const imgRatio = img.naturalWidth / img.naturalHeight;
-    const targetRatio = targetWidth / targetHeight;
-    let drawW = targetWidth;
-    let drawH = targetHeight;
-    let offsetX = 0;
-    let offsetY = 0;
-
-    if (imgRatio > targetRatio) {
-      drawW = targetHeight * imgRatio;
-      offsetX = (targetWidth - drawW) / 2;
+    ctx.save();
+    if (bgType === 'solid') {
+      ctx.fillStyle = solidBgColor;
+      ctx.fillRect(0, 0, targetWidth, targetHeight);
+    } else if (bgType === 'gradient') {
+      const angleRad = (gradientAngle * Math.PI) / 180;
+      const x2 = targetWidth * Math.cos(angleRad);
+      const y2 = targetHeight * Math.sin(angleRad);
+      const grad = ctx.createLinearGradient(0, 0, x2, y2);
+      grad.addColorStop(0, gradientColor1);
+      grad.addColorStop(1, gradientColor2);
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, targetWidth, targetHeight);
     } else {
-      drawH = targetWidth / imgRatio;
-      offsetY = (targetHeight - drawH) / 2;
-    }
+      // Photo Background with Filters
+      const filterStr = `brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%) blur(${bgBlur}px) grayscale(${grayscale}%) sepia(${sepia}%)`;
+      ctx.filter = filterStr;
 
-    ctx.drawImage(img, offsetX, offsetY, drawW, drawH);
+      const imgRatio = img.naturalWidth / img.naturalHeight;
+      const targetRatio = targetWidth / targetHeight;
+      let drawW = targetWidth;
+      let drawH = targetHeight;
+      let offsetX = 0;
+      let offsetY = 0;
+
+      if (imgRatio > targetRatio) {
+        drawW = targetHeight * imgRatio;
+        offsetX = (targetWidth - drawW) / 2;
+      } else {
+        drawH = targetWidth / imgRatio;
+        offsetY = (targetHeight - drawH) / 2;
+      }
+
+      ctx.drawImage(img, offsetX, offsetY, drawW, drawH);
+    }
+    ctx.restore();
+
+    // Draw Twitter / Social Media Header Card if enabled
+    if (layoutMode === 'twitter-card') {
+      const headerH = Math.max(90, targetHeight * 0.22);
+      ctx.save();
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, targetWidth, headerH);
+
+      // Draw Avatar circle
+      const avatarR = 22;
+      const avatarX = 36;
+      const avatarY = headerH / 2;
+      ctx.fillStyle = '#4f46e5';
+      ctx.beginPath();
+      ctx.arc(avatarX, avatarY, avatarR, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Avatar Initial Letter
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 18px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText((twitterName.charAt(0) || 'D').toUpperCase(), avatarX, avatarY);
+
+      // Twitter Name & Handle
+      ctx.textAlign = 'left';
+      ctx.fillStyle = '#0f172a';
+      ctx.font = 'bold 15px sans-serif';
+      ctx.fillText(twitterName, avatarX + avatarR + 12, avatarY - 8);
+
+      ctx.fillStyle = '#64748b';
+      ctx.font = '12px sans-serif';
+      ctx.fillText(twitterHandle, avatarX + avatarR + 12, avatarY + 10);
+
+      // Divider border
+      ctx.strokeStyle = '#e2e8f0';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(0, headerH);
+      ctx.lineTo(targetWidth, headerH);
+      ctx.stroke();
+
+      ctx.restore();
+    }
 
     // 2. Draw Multi-layer Overlay Images
     overlayLayers.forEach((layer) => {
@@ -579,7 +682,7 @@ export default function MemeGeneratorPage() {
       ctx.restore();
     });
 
-    // 3. Render Top Text with topStyle
+    // 3. Render Top Text with topStyle & Shadow Glow
     const topStr = topStyle.isUppercase ? topText.toUpperCase() : topText;
     if (topStr.trim()) {
       ctx.save();
@@ -592,6 +695,14 @@ export default function MemeGeneratorPage() {
       ctx.textBaseline = 'middle';
       ctx.font = `900 ${topStyle.fontSize}px "${topStyle.fontFamily}", sans-serif`;
 
+      // Apply Text Shadow / Glow
+      if (topStyle.shadowColor && (topStyle.shadowBlur > 0 || topStyle.shadowOffsetX !== 0 || topStyle.shadowOffsetY !== 0)) {
+        ctx.shadowColor = topStyle.shadowColor;
+        ctx.shadowBlur = topStyle.shadowBlur;
+        ctx.shadowOffsetX = topStyle.shadowOffsetX;
+        ctx.shadowOffsetY = topStyle.shadowOffsetY;
+      }
+
       const tx = (targetWidth * topTextPos.x) / 100;
       const ty = (targetHeight * topTextPos.y) / 100;
       if (topStyle.strokeWidth > 0) ctx.strokeText(topStr, tx, ty);
@@ -599,6 +710,7 @@ export default function MemeGeneratorPage() {
 
       if (activeDragTarget === 'topText' || (selectedTextTarget === 'top' && !activeLayerId)) {
         const textWidth = ctx.measureText(topStr).width;
+        ctx.shadowColor = 'transparent';
         ctx.strokeStyle = '#6366f1';
         ctx.lineWidth = 3;
         ctx.setLineDash([8, 8]);
@@ -607,7 +719,7 @@ export default function MemeGeneratorPage() {
       ctx.restore();
     }
 
-    // 4. Render Bottom Text with bottomStyle
+    // 4. Render Bottom Text with bottomStyle & Shadow Glow
     const bottomStr = bottomStyle.isUppercase ? bottomText.toUpperCase() : bottomText;
     if (bottomStr.trim()) {
       ctx.save();
@@ -620,6 +732,14 @@ export default function MemeGeneratorPage() {
       ctx.textBaseline = 'middle';
       ctx.font = `900 ${bottomStyle.fontSize}px "${bottomStyle.fontFamily}", sans-serif`;
 
+      // Apply Text Shadow / Glow
+      if (bottomStyle.shadowColor && (bottomStyle.shadowBlur > 0 || bottomStyle.shadowOffsetX !== 0 || bottomStyle.shadowOffsetY !== 0)) {
+        ctx.shadowColor = bottomStyle.shadowColor;
+        ctx.shadowBlur = bottomStyle.shadowBlur;
+        ctx.shadowOffsetX = bottomStyle.shadowOffsetX;
+        ctx.shadowOffsetY = bottomStyle.shadowOffsetY;
+      }
+
       const bx = (targetWidth * bottomTextPos.x) / 100;
       const by = (targetHeight * bottomTextPos.y) / 100;
       if (bottomStyle.strokeWidth > 0) ctx.strokeText(bottomStr, bx, by);
@@ -627,11 +747,56 @@ export default function MemeGeneratorPage() {
 
       if (activeDragTarget === 'bottomText' || (selectedTextTarget === 'bottom' && !activeLayerId)) {
         const textWidth = ctx.measureText(bottomStr).width;
+        ctx.shadowColor = 'transparent';
         ctx.strokeStyle = '#6366f1';
         ctx.lineWidth = 3;
         ctx.setLineDash([8, 8]);
         ctx.strokeRect(bx - textWidth / 2 - 10, by - bottomStyle.fontSize / 2 - 6, textWidth + 20, bottomStyle.fontSize + 12);
       }
+      ctx.restore();
+    }
+
+    // 5. Render Brand Watermark Tag
+    if (watermarkEnabled && watermarkText.trim()) {
+      ctx.save();
+      ctx.globalAlpha = watermarkOpacity;
+      ctx.font = 'bold 14px sans-serif';
+      ctx.fillStyle = watermarkColor;
+      ctx.textBaseline = 'middle';
+
+      const metrics = ctx.measureText(watermarkText);
+      const textW = metrics.width;
+      const padX = 12;
+      const boxW = textW + padX * 2;
+      const boxH = 28;
+
+      let wx = 16;
+      let wy = 16;
+
+      if (watermarkPosition === 'bottom-right') {
+        wx = targetWidth - boxW - 16;
+        wy = targetHeight - boxH - 16;
+      } else if (watermarkPosition === 'bottom-left') {
+        wx = 16;
+        wy = targetHeight - boxH - 16;
+      } else if (watermarkPosition === 'top-right') {
+        wx = targetWidth - boxW - 16;
+        wy = 16;
+      } else if (watermarkPosition === 'top-left') {
+        wx = 16;
+        wy = 16;
+      }
+
+      // Background pill badge
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+      ctx.beginPath();
+      ctx.fillRect(wx, wy, boxW, boxH);
+      ctx.fill();
+
+      // Watermark text
+      ctx.fillStyle = watermarkColor;
+      ctx.textAlign = 'left';
+      ctx.fillText(watermarkText, wx + padX, wy + boxH / 2);
       ctx.restore();
     }
 
@@ -642,7 +807,39 @@ export default function MemeGeneratorPage() {
       ctx.textBaseline = 'middle';
       ctx.fillText(selectedEmoji, targetWidth * 0.88, targetHeight * 0.14);
     }
-  }, [topText, bottomText, topStyle, bottomStyle, topTextPos, bottomTextPos, selectedTextTarget, selectedEmoji, aspectRatio, overlayLayers, activeLayerId, activeDragTarget]);
+  }, [
+    topText,
+    bottomText,
+    topStyle,
+    bottomStyle,
+    topTextPos,
+    bottomTextPos,
+    selectedTextTarget,
+    selectedEmoji,
+    aspectRatio,
+    overlayLayers,
+    activeLayerId,
+    activeDragTarget,
+    brightness,
+    contrast,
+    saturation,
+    bgBlur,
+    grayscale,
+    sepia,
+    bgType,
+    solidBgColor,
+    gradientColor1,
+    gradientColor2,
+    gradientAngle,
+    watermarkEnabled,
+    watermarkText,
+    watermarkPosition,
+    watermarkOpacity,
+    watermarkColor,
+    layoutMode,
+    twitterName,
+    twitterHandle,
+  ]);
 
   // Load background image
   const loadBgImage = useCallback((src: string) => {
@@ -1271,6 +1468,70 @@ export default function MemeGeneratorPage() {
             </motion.div>
           )}
 
+          {/* Layout Mode Selector (Classic Meme vs Twitter Card) */}
+          <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm flex flex-col gap-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-gray-700">Meme Layout Style</span>
+              <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md">
+                {layoutMode === 'standard' ? 'Classic Top-Bottom' : 'Twitter / X Card'}
+              </span>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => {
+                  setLayoutMode('standard');
+                  pushHistorySnapshot();
+                }}
+                className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                  layoutMode === 'standard'
+                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                    : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'
+                }`}
+              >
+                🖼️ Classic Meme
+              </button>
+              <button
+                onClick={() => {
+                  setLayoutMode('twitter-card');
+                  pushHistorySnapshot();
+                }}
+                className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                  layoutMode === 'twitter-card'
+                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                    : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'
+                }`}
+              >
+                🐦 Twitter / X Card
+              </button>
+            </div>
+
+            {layoutMode === 'twitter-card' && (
+              <div className="grid grid-cols-2 gap-3 pt-2 border-t border-gray-100">
+                <div>
+                  <label className="block text-[11px] font-bold text-gray-600 mb-1">Author Name</label>
+                  <input
+                    type="text"
+                    value={twitterName}
+                    onChange={(e) => setTwitterName(e.target.value)}
+                    onBlur={() => pushHistorySnapshot()}
+                    className="w-full px-3 py-1.5 rounded-xl border border-gray-200 text-xs font-bold text-gray-800"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-gray-600 mb-1">@Handle</label>
+                  <input
+                    type="text"
+                    value={twitterHandle}
+                    onChange={(e) => setTwitterHandle(e.target.value)}
+                    onBlur={() => pushHistorySnapshot()}
+                    className="w-full px-3 py-1.5 rounded-xl border border-gray-200 text-xs font-bold text-gray-800"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Typography & Independent Text Styling Controls */}
           <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex flex-col gap-5">
             <div className="flex items-center justify-between border-b border-gray-100 pb-3">
@@ -1541,6 +1802,37 @@ export default function MemeGeneratorPage() {
               </div>
             </div>
 
+            {/* Feature 2: Drop Shadow & Neon Glow */}
+            <div className="pt-3 border-t border-gray-100 space-y-3">
+              <span className="text-xs font-bold text-gray-700 block">Text Shadow / Outer Glow</span>
+              <div className="grid grid-cols-2 gap-3 items-center">
+                <div>
+                  <label className="block text-[11px] font-bold text-gray-600 mb-1">Glow Color</label>
+                  <input
+                    type="color"
+                    value={activeStyle.shadowColor}
+                    onChange={(e) => {
+                      updateActiveTextStyle({ shadowColor: e.target.value });
+                      pushHistorySnapshot();
+                    }}
+                    className="w-full h-8 rounded-lg border border-gray-200 cursor-pointer p-0.5"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-gray-600 mb-1">Blur Radius: {activeStyle.shadowBlur}px</label>
+                  <input
+                    type="range"
+                    min="0"
+                    max="24"
+                    value={activeStyle.shadowBlur}
+                    onChange={(e) => updateActiveTextStyle({ shadowBlur: Number(e.target.value) })}
+                    onMouseUp={() => pushHistorySnapshot()}
+                    className="w-full accent-indigo-600"
+                  />
+                </div>
+              </div>
+            </div>
+
             {/* Aspect Ratio Presets */}
             <div>
               <label className="block text-xs font-bold text-gray-700 mb-2">Aspect Ratio</label>
@@ -1731,6 +2023,288 @@ export default function MemeGeneratorPage() {
                   </button>
                 ))}
               </div>
+            </div>
+
+            {/* Feature 3: Solid & Gradient Background Creator */}
+            <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-gray-700">Canvas Background Fill</span>
+                <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider">{bgType}</span>
+              </div>
+
+              {/* Mode Tabs */}
+              <div className="flex gap-1.5 bg-gray-100 p-1.5 rounded-2xl">
+                {[
+                  { id: 'photo', label: '📷 Photo' },
+                  { id: 'solid', label: '🎨 Solid' },
+                  { id: 'gradient', label: '🌈 Gradient' },
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => {
+                      setBgType(tab.id as any);
+                      pushHistorySnapshot();
+                    }}
+                    className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                      bgType === tab.id
+                        ? 'bg-white text-indigo-600 shadow-2xs ring-1 ring-black/5'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+
+              {bgType === 'solid' && (
+                <div className="space-y-3 pt-1">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-gray-700">Solid Color</label>
+                    <input
+                      type="color"
+                      value={solidBgColor}
+                      onChange={(e) => {
+                        setSolidBgColor(e.target.value);
+                        pushHistorySnapshot();
+                      }}
+                      className="w-8 h-8 rounded-lg border border-gray-200 cursor-pointer p-0.5"
+                    />
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {['#0f172a', '#1e1b4b', '#831843', '#064e3b', '#451a03', '#ffffff', '#000000'].map((color) => (
+                      <button
+                        key={color}
+                        onClick={() => {
+                          setSolidBgColor(color);
+                          pushHistorySnapshot();
+                        }}
+                        className="w-7 h-7 rounded-lg border border-black/10 shadow-2xs cursor-pointer hover:scale-110 transition-transform"
+                        style={{ backgroundColor: color }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {bgType === 'gradient' && (
+                <div className="space-y-3 pt-1">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-bold text-gray-600 mb-1">Color 1</label>
+                      <input
+                        type="color"
+                        value={gradientColor1}
+                        onChange={(e) => {
+                          setGradientColor1(e.target.value);
+                          pushHistorySnapshot();
+                        }}
+                        className="w-full h-8 rounded-lg border border-gray-200 cursor-pointer p-0.5"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-gray-600 mb-1">Color 2</label>
+                      <input
+                        type="color"
+                        value={gradientColor2}
+                        onChange={(e) => {
+                          setGradientColor2(e.target.value);
+                          pushHistorySnapshot();
+                        }}
+                        className="w-full h-8 rounded-lg border border-gray-200 cursor-pointer p-0.5"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Gradient Presets */}
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    {[
+                      { c1: '#4f46e5', c2: '#9333ea', name: 'Cyberpunk' },
+                      { c1: '#ff4e50', c2: '#f9d423', name: 'Sunset' },
+                      { c1: '#0f172a', c2: '#1e293b', name: 'Dark Slate' },
+                      { c1: '#059669', c2: '#10b981', name: 'Emerald' },
+                      { c1: '#ec4899', c2: '#8b5cf6', name: 'Neon Pink' },
+                    ].map((g) => (
+                      <button
+                        key={g.name}
+                        onClick={() => {
+                          setGradientColor1(g.c1);
+                          setGradientColor2(g.c2);
+                          pushHistorySnapshot();
+                        }}
+                        title={g.name}
+                        className="w-8 h-8 rounded-xl border border-black/10 shadow-2xs cursor-pointer hover:scale-110 transition-transform"
+                        style={{ background: `linear-gradient(135deg, ${g.c1}, ${g.c2})` }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Feature 1: Photo Filters & Adjustments */}
+            {bgType === 'photo' && (
+              <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-gray-700">Photo Filters & Effects</span>
+                  <button
+                    onClick={() => {
+                      setBrightness(100);
+                      setContrast(100);
+                      setSaturation(100);
+                      setBgBlur(0);
+                      setGrayscale(0);
+                      setSepia(0);
+                      pushHistorySnapshot();
+                    }}
+                    className="text-[11px] font-bold text-indigo-600 hover:text-indigo-700 cursor-pointer"
+                  >
+                    Reset Filters
+                  </button>
+                </div>
+
+                {/* Filter Presets */}
+                <div className="flex flex-wrap gap-1.5">
+                  {[
+                    { label: 'Dim BG', b: 60, c: 110, s: 100, blur: 4, g: 0, sep: 0 },
+                    { label: 'Cinematic', b: 105, c: 125, s: 120, blur: 0, g: 0, sep: 0 },
+                    { label: 'Vibrant', b: 110, c: 115, s: 150, blur: 0, g: 0, sep: 0 },
+                    { label: 'B&W', b: 100, c: 120, s: 100, blur: 0, g: 100, sep: 0 },
+                    { label: 'Vintage', b: 95, c: 105, s: 90, blur: 0, g: 0, sep: 80 },
+                  ].map((preset) => (
+                    <button
+                      key={preset.label}
+                      onClick={() => {
+                        setBrightness(preset.b);
+                        setContrast(preset.c);
+                        setSaturation(preset.s);
+                        setBgBlur(preset.blur);
+                        setGrayscale(preset.g);
+                        setSepia(preset.sep);
+                        pushHistorySnapshot();
+                      }}
+                      className="px-2.5 py-1 rounded-xl bg-gray-50 hover:bg-indigo-50 border border-gray-200 text-xs font-bold text-gray-700 hover:text-indigo-600 transition-colors cursor-pointer"
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Filter Sliders */}
+                <div className="grid grid-cols-2 gap-3 text-xs font-semibold text-gray-700">
+                  <div>
+                    <span>Brightness: {brightness}%</span>
+                    <input
+                      type="range"
+                      min="30"
+                      max="180"
+                      value={brightness}
+                      onChange={(e) => setBrightness(Number(e.target.value))}
+                      onMouseUp={() => pushHistorySnapshot()}
+                      className="w-full accent-indigo-600 mt-1"
+                    />
+                  </div>
+                  <div>
+                    <span>Contrast: {contrast}%</span>
+                    <input
+                      type="range"
+                      min="40"
+                      max="180"
+                      value={contrast}
+                      onChange={(e) => setContrast(Number(e.target.value))}
+                      onMouseUp={() => pushHistorySnapshot()}
+                      className="w-full accent-indigo-600 mt-1"
+                    />
+                  </div>
+                  <div>
+                    <span>Blur BG: {bgBlur}px</span>
+                    <input
+                      type="range"
+                      min="0"
+                      max="16"
+                      value={bgBlur}
+                      onChange={(e) => setBgBlur(Number(e.target.value))}
+                      onMouseUp={() => pushHistorySnapshot()}
+                      className="w-full accent-indigo-600 mt-1"
+                    />
+                  </div>
+                  <div>
+                    <span>Saturation: {saturation}%</span>
+                    <input
+                      type="range"
+                      min="0"
+                      max="200"
+                      value={saturation}
+                      onChange={(e) => setSaturation(Number(e.target.value))}
+                      onMouseUp={() => pushHistorySnapshot()}
+                      className="w-full accent-indigo-600 mt-1"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Feature 4: Brand Watermark Tag Card */}
+            <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-gray-700">Brand Watermark Tag</span>
+                <input
+                  type="checkbox"
+                  checked={watermarkEnabled}
+                  onChange={(e) => {
+                    setWatermarkEnabled(e.target.checked);
+                    pushHistorySnapshot();
+                  }}
+                  className="w-4 h-4 rounded text-indigo-600 accent-indigo-600 cursor-pointer"
+                />
+              </div>
+
+              {watermarkEnabled && (
+                <div className="space-y-3 pt-2 border-t border-gray-100">
+                  <div>
+                    <label className="block text-[11px] font-bold text-gray-600 mb-1">Watermark Text</label>
+                    <input
+                      type="text"
+                      value={watermarkText}
+                      onChange={(e) => setWatermarkText(e.target.value)}
+                      onBlur={() => pushHistorySnapshot()}
+                      placeholder="@MyPageName"
+                      className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs font-bold text-gray-800"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-[11px] font-bold text-gray-600 mb-1">Corner Position</label>
+                      <select
+                        value={watermarkPosition}
+                        onChange={(e) => {
+                          setWatermarkPosition(e.target.value as any);
+                          pushHistorySnapshot();
+                        }}
+                        className="w-full px-2 py-1.5 rounded-xl border border-gray-200 text-xs font-bold text-gray-800 bg-white"
+                      >
+                        <option value="bottom-right">Bottom Right</option>
+                        <option value="bottom-left">Bottom Left</option>
+                        <option value="top-right">Top Right</option>
+                        <option value="top-left">Top Left</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-gray-600 mb-1">Opacity: {Math.round(watermarkOpacity * 100)}%</label>
+                      <input
+                        type="range"
+                        min="0.2"
+                        max="1.0"
+                        step="0.1"
+                        value={watermarkOpacity}
+                        onChange={(e) => setWatermarkOpacity(Number(e.target.value))}
+                        onMouseUp={() => pushHistorySnapshot()}
+                        className="w-full accent-indigo-600 mt-1"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
           </div>
