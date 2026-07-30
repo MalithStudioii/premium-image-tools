@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Smile, Upload, Download, Copy, Check, Type, Layers, Trash2, RotateCw, ZoomIn, Eye, Image as ImageIcon, Undo2, Redo2, X } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Smile, Upload, Download, Copy, Check, Type, Layers, Trash2, RotateCw, ZoomIn, Eye, Image as ImageIcon, Undo2, Redo2, X, Search, Sparkles } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export interface ImageLayer {
   id: string;
@@ -81,32 +81,208 @@ const PRESET_OVERLAYS = [
   },
 ];
 
-const EMOJI_LIST = [
-  { symbol: '🔥', name: 'Fire / Hot' },
-  { symbol: '😂', name: 'Laughing / LOL' },
-  { symbol: '🚀', name: 'Rocket / To The Moon' },
-  { symbol: '💯', name: '100 / Perfect' },
-  { symbol: '👑', name: 'Crown / King' },
-  { symbol: '🎯', name: 'Target / Bullseye' },
-  { symbol: '✨', name: 'Sparkles / Magic' },
-  { symbol: '⚡', name: 'Lightning / Fast' },
-  { symbol: '😎', name: 'Cool Glasses' },
-  { symbol: '💀', name: 'Skull / Dead' },
-  { symbol: '🤡', name: 'Clown / Meme' },
-  { symbol: '🗿', name: 'Moai / Chad' },
-  { symbol: '👀', name: 'Eyes / Looking' },
-  { symbol: '🤯', name: 'Mind Blown' },
-  { symbol: '💩', name: 'Poop / Shitpost' },
-  { symbol: '🎉', name: 'Party / Celebrate' },
-  { symbol: '💪', name: 'Flex / Strong' },
-  { symbol: '💰', name: 'Money Bag' },
-  { symbol: '👍', name: 'Thumbs Up' },
-  { symbol: '❤️', name: 'Red Heart' },
-  { symbol: '🥳', name: 'Party Face' },
-  { symbol: '🥶', name: 'Cold / Ice' },
-  { symbol: '🙈', name: 'See No Evil' },
-  { symbol: '🫡', name: 'Salute / Respect' },
-  { symbol: '🐐', name: 'GOAT / Greatest' },
+interface EmojiItem {
+  symbol: string;
+  name: string;
+  keywords: string;
+}
+
+interface EmojiCategory {
+  id: string;
+  name: string;
+  icon: string;
+  emojis: EmojiItem[];
+}
+
+const EMOJI_CATEGORIES: EmojiCategory[] = [
+  {
+    id: 'smileys',
+    name: 'Smiley faces and expressions',
+    icon: '😀',
+    emojis: [
+      { symbol: '😀', name: 'Grinning Face', keywords: 'happy smile joy' },
+      { symbol: '😃', name: 'Grinning Face with Big Eyes', keywords: 'happy smile' },
+      { symbol: '😄', name: 'Grinning Face with Smiling Eyes', keywords: 'happy smile' },
+      { symbol: '😁', name: 'Beaming Face', keywords: 'grin teeth happy' },
+      { symbol: '😆', name: 'Grinning Squinting Face', keywords: 'laugh XD' },
+      { symbol: '😅', name: 'Grinning Face with Sweat', keywords: 'phew nervous' },
+      { symbol: '🤣', name: 'ROFL', keywords: 'rolling laughing floor' },
+      { symbol: '😂', name: 'Face with Tears of Joy', keywords: 'lol laugh cry' },
+      { symbol: '🙂', name: 'Slightly Smiling Face', keywords: 'smile fine' },
+      { symbol: '🙃', name: 'Upside Down Face', keywords: 'silly sarcasm' },
+      { symbol: '😉', name: 'Winking Face', keywords: 'wink secret' },
+      { symbol: '😊', name: 'Smiling Face with Smiling Eyes', keywords: 'blush happy' },
+      { symbol: '😇', name: 'Halo Angel', keywords: 'innocent good' },
+      { symbol: '🥰', name: 'Smiling Face with Hearts', keywords: 'love' },
+      { symbol: '😍', name: 'Heart Eyes', keywords: 'love crusing' },
+      { symbol: '🤩', name: 'Star Struck', keywords: 'wow amazed' },
+      { symbol: '😘', name: 'Blowing Kiss', keywords: 'kiss love' },
+      { symbol: '😋', name: 'Face Savoring Food', keywords: 'yum delicious' },
+      { symbol: '😛', name: 'Face with Tongue', keywords: 'playful' },
+      { symbol: '😜', name: 'Winking Face with Tongue', keywords: 'crazy playful' },
+      { symbol: '🤪', name: 'Zany Face', keywords: 'goofy wild' },
+      { symbol: '😝', name: 'Squinting Face with Tongue', keywords: 'mischievous' },
+      { symbol: '🤑', name: 'Money Mouth Face', keywords: 'rich cash' },
+      { symbol: '😎', name: 'Cool Shades', keywords: 'sunglasses boss' },
+      { symbol: '🤓', name: 'Nerd Face', keywords: 'geek smart' },
+      { symbol: '🧐', name: 'Monocle Face', keywords: 'inspect suspicious' },
+      { symbol: '🤠', name: 'Cowboy Hat', keywords: 'yeehaw' },
+      { symbol: '🥳', name: 'Party Face', keywords: 'celebrate hat party' },
+      { symbol: '😏', name: 'Smirking Face', keywords: 'smug flirt' },
+      { symbol: '😒', name: 'Unamused Face', keywords: 'meh annoyed' },
+      { symbol: '🙄', name: 'Face with Rolling Eyes', keywords: 'whatever' },
+      { symbol: '😬', name: 'Grimacing Face', keywords: 'awkward oops' },
+      { symbol: '🤥', name: 'Lying Face', keywords: 'pinocchio lie' },
+      { symbol: '😌', name: 'Relieved Face', keywords: 'calm peaceful' },
+      { symbol: '😔', name: 'Pensive Face', keywords: 'sad' },
+      { symbol: '😪', name: 'Sleepy Face', keywords: 'tired' },
+      { symbol: '🤤', name: 'Drooling Face', keywords: 'hungry' },
+      { symbol: '😴', name: 'Sleeping Face', keywords: 'zzz' },
+      { symbol: '😷', name: 'Medical Mask Face', keywords: 'sick' },
+      { symbol: '🤒', name: 'Thermometer Face', keywords: 'fever' },
+      { symbol: '🤕', name: 'Head Bandage Face', keywords: 'hurt' },
+      { symbol: '🤢', name: 'Nauseated Face', keywords: 'gross' },
+      { symbol: '🤮', name: 'Vomiting Face', keywords: 'barf' },
+      { symbol: '🤧', name: 'Sneezing Face', keywords: 'achoo' },
+      { symbol: '🥵', name: 'Hot Face', keywords: 'heat summer' },
+      { symbol: '🥶', name: 'Cold Ice Face', keywords: 'freezing' },
+      { symbol: '🥴', name: 'Woozy Face', keywords: 'drunk dizzy' },
+      { symbol: '😵', name: 'Dizzy Face', keywords: 'fainted' },
+      { symbol: '🤯', name: 'Exploding Head', keywords: 'mind blown' },
+      { symbol: '😈', name: 'Smiling Devil', keywords: 'evil horn' },
+      { symbol: '👿', name: 'Angry Devil', keywords: 'demon' },
+      { symbol: '💀', name: 'Skull', keywords: 'dead death laugh' },
+      { symbol: '☠️', name: 'Skull and Crossbones', keywords: 'danger poison' },
+      { symbol: '💩', name: 'Pile of Poop', keywords: 'shit funny' },
+      { symbol: '🤡', name: 'Clown Face', keywords: 'joke' },
+      { symbol: '👹', name: 'Ogre', keywords: 'monster' },
+      { symbol: '👺', name: 'Goblin', keywords: 'red mask' },
+      { symbol: '👻', name: 'Ghost', keywords: 'spooky halloween' },
+      { symbol: '👽', name: 'Alien', keywords: 'ufo space' },
+      { symbol: '👾', name: 'Alien Monster', keywords: 'game pixel' },
+      { symbol: '🤖', name: 'Robot Face', keywords: 'bot tech' },
+    ],
+  },
+  {
+    id: 'trending',
+    name: 'Badges and memes',
+    icon: '🔥',
+    emojis: [
+      { symbol: '🔥', name: 'Fire', keywords: 'hot lit trend' },
+      { symbol: '🚀', name: 'Rocket', keywords: 'moon fast crypto launch' },
+      { symbol: '💯', name: '100 Points', keywords: 'hundred perfect score' },
+      { symbol: '👑', name: 'Crown', keywords: 'king queen vip royal' },
+      { symbol: '🎯', name: 'Bullseye Target', keywords: 'goal hit focus' },
+      { symbol: '✨', name: 'Sparkles', keywords: 'magic shiny star' },
+      { symbol: '⚡', name: 'High Voltage', keywords: 'lightning electric shock' },
+      { symbol: '🗿', name: 'Moai Stone Head', keywords: 'sigma chad statue' },
+      { symbol: '👀', name: 'Eyes', keywords: 'look see watching' },
+      { symbol: '💪', name: 'Flexed Biceps', keywords: 'strong muscle power' },
+      { symbol: '💰', name: 'Money Bag', keywords: 'cash rich dollar' },
+      { symbol: '👍', name: 'Thumbs Up', keywords: 'like yes agree' },
+      { symbol: '❤️', name: 'Red Heart', keywords: 'love passion' },
+      { symbol: '🫡', name: 'Saluting Face', keywords: 'respect sir yes' },
+      { symbol: '🐐', name: 'Goat', keywords: 'greatest of all time' },
+      { symbol: '🏆', name: 'Trophy', keywords: 'winner champion first' },
+      { symbol: '💎', name: 'Gem Stone', keywords: 'diamond luxury expensive' },
+      { symbol: '⭐', name: 'Star', keywords: 'favorite gold' },
+      { symbol: '🥇', name: '1st Place Medal', keywords: 'gold winner' },
+      { symbol: '🎉', name: 'Party Popper', keywords: 'celebration yay' },
+      { symbol: '💥', name: 'Collision Boom', keywords: 'explosion bang' },
+      { symbol: '🍿', name: 'Popcorn', keywords: 'movie drama watch' },
+      { symbol: '📢', name: 'Loudspeaker', keywords: 'announcement news' },
+      { symbol: '📌', name: 'Pushpin', keywords: 'pin notice key' },
+      { symbol: '🏷️', name: 'Label Tag', keywords: 'price tag sale' },
+    ],
+  },
+  {
+    id: 'animals',
+    name: 'Animals and nature',
+    icon: '🐱',
+    emojis: [
+      { symbol: '🐶', name: 'Dog Face', keywords: 'puppy pet' },
+      { symbol: '🐱', name: 'Cat Face', keywords: 'kitty pet meow' },
+      { symbol: '🐭', name: 'Mouse Face', keywords: 'rat' },
+      { symbol: '🐹', name: 'Hamster Face', keywords: 'cute' },
+      { symbol: '🐰', name: 'Rabbit Face', keywords: 'bunny' },
+      { symbol: '🦊', name: 'Fox', keywords: 'sly red' },
+      { symbol: '🐻', name: 'Bear', keywords: 'teddy' },
+      { symbol: '🐼', name: 'Panda', keywords: 'bamboo' },
+      { symbol: '🐨', name: 'Koala', keywords: 'eucalyptus' },
+      { symbol: '🐯', name: 'Tiger Face', keywords: 'wild' },
+      { symbol: '🦁', name: 'Lion', keywords: 'king' },
+      { symbol: '🐮', name: 'Cow Face', keywords: 'moo' },
+      { symbol: '🐷', name: 'Pig Face', keywords: 'oink' },
+      { symbol: '🐸', name: 'Frog Face', keywords: 'pepe toad' },
+      { symbol: '🐵', name: 'Monkey Face', keywords: 'ape' },
+      { symbol: '🐔', name: 'Chicken', keywords: 'rooster' },
+      { symbol: '🐧', name: 'Penguin', keywords: 'ice' },
+      { symbol: '🐦', name: 'Bird', keywords: 'tweet' },
+      { symbol: '🦅', name: 'Eagle', keywords: 'fly america' },
+      { symbol: '🦉', name: 'Owl', keywords: 'wise night' },
+      { symbol: '🦇', name: 'Bat', keywords: 'vampire' },
+      { symbol: '🐺', name: 'Wolf', keywords: 'howl lone' },
+      { symbol: '🦄', name: 'Unicorn', keywords: 'fantasy rainbow' },
+      { symbol: '🐝', name: 'Honeybee', keywords: 'buzz honey' },
+      { symbol: '🦋', name: 'Butterfly', keywords: 'beauty' },
+      { symbol: '🐙', name: 'Octopus', keywords: 'tentacles' },
+      { symbol: '🦈', name: 'Shark', keywords: 'jaw ocean' },
+      { symbol: '🐊', name: 'Crocodile', keywords: 'gator' },
+      { symbol: '🦍', name: 'Gorilla', keywords: 'harambe ape' },
+    ],
+  },
+  {
+    id: 'food',
+    name: 'Food and drink',
+    icon: '🍕',
+    emojis: [
+      { symbol: '🍕', name: 'Pizza', keywords: 'cheese Italian' },
+      { symbol: '🍔', name: 'Hamburger', keywords: 'burger fast food' },
+      { symbol: '🍟', name: 'French Fries', keywords: 'chips potato' },
+      { symbol: '🌭', name: 'Hot Dog', keywords: 'sausage' },
+      { symbol: '🍿', name: 'Popcorn', keywords: 'snack movie' },
+      { symbol: '🥓', name: 'Bacon', keywords: 'pork breakfast' },
+      { symbol: '🥩', name: 'Cut of Meat', keywords: 'steak' },
+      { symbol: '🥞', name: 'Pancakes', keywords: 'syrup' },
+      { symbol: '🧇', name: 'Waffle', keywords: 'breakfast' },
+      { symbol: '🍩', name: 'Donut', keywords: 'sweet pastry' },
+      { symbol: '🍦', name: 'Soft Ice Cream', keywords: 'cone dessert' },
+      { symbol: '🍰', name: 'Shortcake', keywords: 'birthday cake' },
+      { symbol: '🎂', name: 'Birthday Cake', keywords: 'candles party' },
+      { symbol: '🍫', name: 'Chocolate Bar', keywords: 'sweet candy' },
+      { symbol: '☕', name: 'Hot Beverage', keywords: 'coffee tea espresso' },
+      { symbol: '🧋', name: 'Bubble Tea', keywords: 'boba milk tea' },
+      { symbol: '🍺', name: 'Beer Mug', keywords: 'alcohol drink cheer' },
+      { symbol: '🍻', name: 'Clinking Beer Mugs', keywords: 'cheers bar' },
+      { symbol: '🥂', name: 'Clinking Glasses', keywords: 'toast champagne' },
+      { symbol: '🍾', name: 'Bottle with Popping Cork', keywords: 'celebrate' },
+    ],
+  },
+  {
+    id: 'objects',
+    name: 'Objects and symbols',
+    icon: '🚗',
+    emojis: [
+      { symbol: '🚗', name: 'Automobile', keywords: 'car vehicle drive' },
+      { symbol: '🏎️', name: 'Racing Car', keywords: 'f1 speed race' },
+      { symbol: '🚓', name: 'Police Car', keywords: 'cop siren' },
+      { symbol: '🚑', name: 'Ambulance', keywords: 'emergency hospital' },
+      { symbol: '🚒', name: 'Fire Engine', keywords: 'truck rescue' },
+      { symbol: '🏍️', name: 'Motorcycle', keywords: 'bike motor' },
+      { symbol: '✈️', name: 'Airplane', keywords: 'flight travel plane' },
+      { symbol: '🛸', name: 'Flying Saucer', keywords: 'ufo alien' },
+      { symbol: '🎮', name: 'Video Game Controller', keywords: 'gamer joystick' },
+      { symbol: '🎧', name: 'Headphones', keywords: 'music audio listen' },
+      { symbol: '🎸', name: 'Guitar', keywords: 'rock music' },
+      { symbol: '📱', name: 'Mobile Phone', keywords: 'smartphone' },
+      { symbol: '💻', name: 'Laptop', keywords: 'computer code work' },
+      { symbol: '📷', name: 'Camera', keywords: 'photo picture' },
+      { symbol: '💡', name: 'Light Bulb', keywords: 'idea bright' },
+      { symbol: '💣', name: 'Bomb', keywords: 'boom danger' },
+      { symbol: '🎉', name: 'Party Popper', keywords: 'confetti' },
+      { symbol: '🎁', name: 'Wrapped Gift', keywords: 'present birthday' },
+    ],
+  },
 ];
 
 export default function MemeGeneratorPage() {
@@ -135,6 +311,12 @@ export default function MemeGeneratorPage() {
   const [selectedTextTarget, setSelectedTextTarget] = useState<'top' | 'bottom'>('top');
   const [selectedEmoji, setSelectedEmoji] = useState<string | null>(null);
   const [aspectRatio, setAspectRatio] = useState<'original' | '1:1' | '16:9' | '9:16' | '4:5'>('16:9');
+  
+  // Emoji Picker Modal Popover States
+  const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
+  const [activeEmojiCategory, setActiveEmojiCategory] = useState<string>('all');
+  const [emojiSearchQuery, setEmojiSearchQuery] = useState<string>('');
+  const [emojiAddedToast, setEmojiAddedToast] = useState<string | null>(null);
   
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -817,6 +999,24 @@ export default function MemeGeneratorPage() {
     });
   };
 
+  // Filtered Emojis for Modal Picker
+  const filteredEmojiCategories = EMOJI_CATEGORIES.map((cat) => {
+    if (activeEmojiCategory !== 'all' && cat.id !== activeEmojiCategory) {
+      return null;
+    }
+    const filteredEmojis = cat.emojis.filter((e) => {
+      if (!emojiSearchQuery.trim()) return true;
+      const q = emojiSearchQuery.toLowerCase();
+      return (
+        e.symbol.includes(q) ||
+        e.name.toLowerCase().includes(q) ||
+        e.keywords.toLowerCase().includes(q)
+      );
+    });
+    if (filteredEmojis.length === 0) return null;
+    return { ...cat, emojis: filteredEmojis };
+  }).filter((cat): cat is EmojiCategory => cat !== null);
+
   const activeLayer = overlayLayers.find((l) => l.id === activeLayerId);
 
   return (
@@ -1370,46 +1570,164 @@ export default function MemeGeneratorPage() {
               </div>
             </div>
 
-            {/* Emoji Stickers */}
-            <div>
+            {/* Windows-style Emoji & Sticker Picker Modal Popover */}
+            <div className="relative">
               <div className="flex items-center justify-between mb-2">
                 <label className="block text-xs font-bold text-gray-700">Add Badge / Emoji Sticker</label>
                 <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md">
-                  Drag & Pinch-Zoomable
+                  Draggable & Pinch-Zoom
                 </span>
               </div>
-              
-              {/* Dropdown Select Menu */}
-              <select
-                onChange={(e) => {
-                  if (e.target.value) {
-                    addEmojiSticker(e.target.value);
-                    e.target.value = '';
-                  }
-                }}
-                defaultValue=""
-                className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs font-bold text-gray-800 bg-white shadow-2xs hover:border-indigo-400 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 cursor-pointer transition-all mb-3"
-              >
-                <option value="" disabled>
-                  ✨ Select Emoji Sticker ({EMOJI_LIST.length} Emojis)...
-                </option>
-                {EMOJI_LIST.map((item) => (
-                  <option key={item.symbol} value={item.symbol}>
-                    {item.symbol} {item.name}
-                  </option>
-                ))}
-              </select>
 
-              {/* Quick Pick Emoji Badges */}
-              <div className="flex flex-wrap items-center gap-1.5">
-                {EMOJI_LIST.map((item) => (
+              {/* Picker Toggle Button */}
+              <button
+                onClick={() => setIsEmojiPickerOpen((prev) => !prev)}
+                className="w-full flex items-center justify-between px-4 py-3 rounded-2xl bg-gradient-to-r from-slate-900 to-indigo-950 text-white font-bold text-xs shadow-md shadow-slate-900/10 hover:shadow-lg transition-all cursor-pointer border border-slate-800"
+              >
+                <div className="flex items-center gap-2">
+                  <Smile className="w-4 h-4 text-indigo-400" />
+                  <span>Open Emoji & Sticker Picker...</span>
+                </div>
+                <div className="flex items-center gap-1 bg-white/10 px-2.5 py-1 rounded-lg text-[11px] font-mono text-indigo-200">
+                  <span>😀 150+ Emojis</span>
+                </div>
+              </button>
+
+              {/* Toast Notification */}
+              {emojiAddedToast && (
+                <div className="mt-2 text-center text-xs font-bold text-emerald-600 bg-emerald-50 border border-emerald-200/80 px-3 py-1.5 rounded-xl shadow-2xs">
+                  ✨ Added {emojiAddedToast} sticker to canvas! (Drag or Pinch to resize)
+                </div>
+              )}
+
+              {/* Windows Emoji Picker Popover Window */}
+              <AnimatePresence>
+                {isEmojiPickerOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95, y: -5 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: -5 }}
+                    className="mt-2 bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden z-50 flex flex-col text-slate-100 max-h-[460px] w-full"
+                  >
+                    {/* Title Bar */}
+                    <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800 bg-slate-950/60">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-xs text-slate-200">Emoji and more</span>
+                        <span className="text-[10px] font-mono text-slate-400 bg-slate-800 px-1.5 py-0.5 rounded">
+                          Win+. Style
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => setIsEmojiPickerOpen(false)}
+                        className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    {/* Category Tabs Bar */}
+                    <div className="flex items-center justify-around px-2 py-1.5 border-b border-slate-800 bg-slate-900/90 overflow-x-auto no-scrollbar">
+                      <button
+                        onClick={() => setActiveEmojiCategory('all')}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 cursor-pointer ${
+                          activeEmojiCategory === 'all'
+                            ? 'bg-indigo-600 text-white shadow-xs'
+                            : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                        }`}
+                      >
+                        <span>🕒 All</span>
+                      </button>
+                      {EMOJI_CATEGORIES.map((cat) => (
+                        <button
+                          key={cat.id}
+                          onClick={() => setActiveEmojiCategory(cat.id)}
+                          title={cat.name}
+                          className={`px-3 py-1.5 rounded-xl text-sm transition-all flex items-center justify-center cursor-pointer ${
+                            activeEmojiCategory === cat.id
+                              ? 'bg-indigo-600 text-white shadow-xs border-b-2 border-indigo-400'
+                              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                          }`}
+                        >
+                          <span>{cat.icon}</span>
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Search Bar */}
+                    <div className="p-3 border-b border-slate-800/80 bg-slate-950/40">
+                      <div className="relative flex items-center">
+                        <Search className="w-4 h-4 text-slate-400 absolute left-3 pointer-events-none" />
+                        <input
+                          type="text"
+                          value={emojiSearchQuery}
+                          onChange={(e) => setEmojiSearchQuery(e.target.value)}
+                          placeholder="Search emojis..."
+                          className="w-full pl-9 pr-8 py-2 rounded-xl bg-slate-800/90 border border-slate-700/80 text-xs font-bold text-slate-100 placeholder-slate-400 focus:outline-hidden focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                        />
+                        {emojiSearchQuery && (
+                          <button
+                            onClick={() => setEmojiSearchQuery('')}
+                            className="absolute right-2.5 text-slate-400 hover:text-slate-200 cursor-pointer"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Emoji Grid Container */}
+                    <div className="p-3 overflow-y-auto max-h-[290px] space-y-4 text-left custom-scrollbar">
+                      {filteredEmojiCategories.length === 0 ? (
+                        <div className="text-center py-8 text-slate-500 text-xs font-medium">
+                          No emojis found matching "{emojiSearchQuery}"
+                        </div>
+                      ) : (
+                        filteredEmojiCategories.map(
+                          (cat) =>
+                            cat && (
+                              <div key={cat.id} className="space-y-2">
+                                <h4 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider pl-1">
+                                  {cat.name}
+                                </h4>
+                                <div className="grid grid-cols-7 sm:grid-cols-8 gap-1.5">
+                                  {cat.emojis.map((item) => (
+                                    <button
+                                      key={item.symbol}
+                                      onClick={() => {
+                                        addEmojiSticker(item.symbol);
+                                        setEmojiAddedToast(item.symbol);
+                                        setTimeout(() => setEmojiAddedToast(null), 2500);
+                                      }}
+                                      title={item.name}
+                                      className="w-9 h-9 rounded-xl bg-slate-800/60 hover:bg-indigo-600/40 hover:border-indigo-500/80 border border-slate-800 text-xl flex items-center justify-center transition-all hover:scale-115 cursor-pointer shadow-2xs active:scale-95"
+                                    >
+                                      {item.symbol}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            )
+                        )
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Quick Pick Emoji Bar below Modal Button */}
+              <div className="flex flex-wrap items-center gap-1.5 mt-2.5">
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mr-1">Quick Add:</span>
+                {['🔥', '😂', '🚀', '💯', '👑', '🎯', '✨', '⚡', '🗿', '👀', '💪', '💰', '👍', '❤️', '🐐'].map((symbol) => (
                   <button
-                    key={item.symbol}
-                    onClick={() => addEmojiSticker(item.symbol)}
-                    title={`Add ${item.name}`}
+                    key={symbol}
+                    onClick={() => {
+                      addEmojiSticker(symbol);
+                      setEmojiAddedToast(symbol);
+                      setTimeout(() => setEmojiAddedToast(null), 2500);
+                    }}
                     className="w-8 h-8 rounded-xl bg-gray-50 border border-gray-200 text-base flex items-center justify-center hover:bg-indigo-50 hover:border-indigo-400 hover:scale-110 transition-all cursor-pointer shadow-2xs"
                   >
-                    {item.symbol}
+                    {symbol}
                   </button>
                 ))}
               </div>
