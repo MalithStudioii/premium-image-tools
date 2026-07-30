@@ -42,7 +42,7 @@ export interface HistorySnapshot {
     opacity: number;
   }[];
   selectedEmoji: string | null;
-  aspectRatio: 'original' | '1:1' | '16:9' | '4:5';
+  aspectRatio: 'original' | '1:1' | '16:9' | '9:16' | '4:5';
 }
 
 // Background Presets data URIs
@@ -81,7 +81,33 @@ const PRESET_OVERLAYS = [
   },
 ];
 
-const EMOJI_LIST = ['🔥', '😂', '🚀', '💯', '👑', '🎯', '✨', '⚡'];
+const EMOJI_LIST = [
+  { symbol: '🔥', name: 'Fire / Hot' },
+  { symbol: '😂', name: 'Laughing / LOL' },
+  { symbol: '🚀', name: 'Rocket / To The Moon' },
+  { symbol: '💯', name: '100 / Perfect' },
+  { symbol: '👑', name: 'Crown / King' },
+  { symbol: '🎯', name: 'Target / Bullseye' },
+  { symbol: '✨', name: 'Sparkles / Magic' },
+  { symbol: '⚡', name: 'Lightning / Fast' },
+  { symbol: '😎', name: 'Cool Glasses' },
+  { symbol: '💀', name: 'Skull / Dead' },
+  { symbol: '🤡', name: 'Clown / Meme' },
+  { symbol: '🗿', name: 'Moai / Chad' },
+  { symbol: '👀', name: 'Eyes / Looking' },
+  { symbol: '🤯', name: 'Mind Blown' },
+  { symbol: '💩', name: 'Poop / Shitpost' },
+  { symbol: '🎉', name: 'Party / Celebrate' },
+  { symbol: '💪', name: 'Flex / Strong' },
+  { symbol: '💰', name: 'Money Bag' },
+  { symbol: '👍', name: 'Thumbs Up' },
+  { symbol: '❤️', name: 'Red Heart' },
+  { symbol: '🥳', name: 'Party Face' },
+  { symbol: '🥶', name: 'Cold / Ice' },
+  { symbol: '🙈', name: 'See No Evil' },
+  { symbol: '🫡', name: 'Salute / Respect' },
+  { symbol: '🐐', name: 'GOAT / Greatest' },
+];
 
 export default function MemeGeneratorPage() {
   const [topText, setTopText] = useState('WHEN YOUR CODE COMPILES');
@@ -108,7 +134,7 @@ export default function MemeGeneratorPage() {
 
   const [selectedTextTarget, setSelectedTextTarget] = useState<'top' | 'bottom'>('top');
   const [selectedEmoji, setSelectedEmoji] = useState<string | null>(null);
-  const [aspectRatio, setAspectRatio] = useState<'original' | '1:1' | '16:9' | '4:5'>('16:9');
+  const [aspectRatio, setAspectRatio] = useState<'original' | '1:1' | '16:9' | '9:16' | '4:5'>('16:9');
   
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -315,6 +341,8 @@ export default function MemeGeneratorPage() {
       targetHeight = targetWidth;
     } else if (aspectRatio === '16:9') {
       targetHeight = Math.round((targetWidth * 9) / 16);
+    } else if (aspectRatio === '9:16') {
+      targetHeight = Math.round((targetWidth * 16) / 9);
     } else if (aspectRatio === '4:5') {
       targetHeight = Math.round((targetWidth * 5) / 4);
     }
@@ -458,6 +486,33 @@ export default function MemeGeneratorPage() {
         x: 50,
         y: 50,
         scale: 1.0,
+        rotation: 0,
+        opacity: 1.0,
+      };
+      setOverlayLayers((prev) => [...prev, newLayer]);
+      setActiveLayerId(newLayer.id);
+      setActiveDragTarget('layer');
+      setTimeout(() => pushHistorySnapshot(), 100);
+    };
+    img.src = src;
+  }, [pushHistorySnapshot]);
+
+  // Add Emoji Sticker as draggable & pinch-zoomable layer
+  const addEmojiSticker = useCallback((emojiSymbol: string) => {
+    const svgString = `<svg xmlns="http://www.w3.org/2000/svg" width="240" height="240" viewBox="0 0 240 240">
+      <text x="50%" y="54%" dominant-baseline="central" text-anchor="middle" font-size="160" font-family="Apple Color Emoji, Segoe UI Emoji, Noto Color Emoji, sans-serif">${emojiSymbol}</text>
+    </svg>`;
+    const src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgString)}`;
+
+    const img = new Image();
+    img.onload = () => {
+      const newLayer: ImageLayer = {
+        id: `emoji_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+        name: `Emoji Sticker ${emojiSymbol}`,
+        img,
+        x: 50,
+        y: 50,
+        scale: 0.8,
         rotation: 0,
         opacity: 1.0,
       };
@@ -1289,9 +1344,10 @@ export default function MemeGeneratorPage() {
             {/* Aspect Ratio Presets */}
             <div>
               <label className="block text-xs font-bold text-gray-700 mb-2">Aspect Ratio</label>
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
                 {[
                   { id: '16:9', label: '16:9 Header' },
+                  { id: '9:16', label: '9:16 Story' },
                   { id: '1:1', label: '1:1 Square' },
                   { id: '4:5', label: '4:5 Portrait' },
                   { id: 'original', label: 'Original' },
@@ -1316,35 +1372,44 @@ export default function MemeGeneratorPage() {
 
             {/* Emoji Stickers */}
             <div>
-              <label className="block text-xs font-bold text-gray-700 mb-2">Add Badge Sticker</label>
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  onClick={() => {
-                    setSelectedEmoji(null);
-                    pushHistorySnapshot();
-                  }}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-bold border ${
-                    selectedEmoji === null
-                      ? 'bg-indigo-50 border-indigo-400 text-indigo-700'
-                      : 'bg-gray-50 border-gray-200 text-gray-500'
-                  }`}
-                >
-                  None
-                </button>
-                {EMOJI_LIST.map((emoji) => (
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-xs font-bold text-gray-700">Add Badge / Emoji Sticker</label>
+                <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md">
+                  Drag & Pinch-Zoomable
+                </span>
+              </div>
+              
+              {/* Dropdown Select Menu */}
+              <select
+                onChange={(e) => {
+                  if (e.target.value) {
+                    addEmojiSticker(e.target.value);
+                    e.target.value = '';
+                  }
+                }}
+                defaultValue=""
+                className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs font-bold text-gray-800 bg-white shadow-2xs hover:border-indigo-400 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 cursor-pointer transition-all mb-3"
+              >
+                <option value="" disabled>
+                  ✨ Select Emoji Sticker ({EMOJI_LIST.length} Emojis)...
+                </option>
+                {EMOJI_LIST.map((item) => (
+                  <option key={item.symbol} value={item.symbol}>
+                    {item.symbol} {item.name}
+                  </option>
+                ))}
+              </select>
+
+              {/* Quick Pick Emoji Badges */}
+              <div className="flex flex-wrap items-center gap-1.5">
+                {EMOJI_LIST.map((item) => (
                   <button
-                    key={emoji}
-                    onClick={() => {
-                      setSelectedEmoji(emoji);
-                      pushHistorySnapshot();
-                    }}
-                    className={`w-8 h-8 rounded-lg text-lg flex items-center justify-center border transition-transform cursor-pointer ${
-                      selectedEmoji === emoji
-                        ? 'bg-indigo-50 border-indigo-500 scale-110 shadow-2xs'
-                        : 'bg-gray-50 border-gray-200 hover:scale-105'
-                    }`}
+                    key={item.symbol}
+                    onClick={() => addEmojiSticker(item.symbol)}
+                    title={`Add ${item.name}`}
+                    className="w-8 h-8 rounded-xl bg-gray-50 border border-gray-200 text-base flex items-center justify-center hover:bg-indigo-50 hover:border-indigo-400 hover:scale-110 transition-all cursor-pointer shadow-2xs"
                   >
-                    {emoji}
+                    {item.symbol}
                   </button>
                 ))}
               </div>
