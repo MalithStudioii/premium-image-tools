@@ -136,6 +136,15 @@ export default function MemeGeneratorPage() {
   const overlayFileInputRef = useRef<HTMLInputElement | null>(null);
   const imageObjRef = useRef<HTMLImageElement | null>(null);
 
+  // Two-finger pinch-to-zoom gesture tracking ref
+  const pinchRef = useRef<{
+    initialDist: number;
+    target: 'topText' | 'bottomText' | 'layer' | null;
+    layerId: string | null;
+    initialFontSize: number;
+    initialScale: number;
+  } | null>(null);
+
   // Active text style helper
   const activeStyle = selectedTextTarget === 'top' ? topStyle : bottomStyle;
 
@@ -503,11 +512,47 @@ export default function MemeGeneratorPage() {
     return { mouseX, mouseY };
   };
 
-  // Start dragging (Mouse / Touch)
+  // Start dragging or pinch-zooming (Mouse / Touch)
   const startDrag = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
+
+    // Handle 2-finger touch pinch start
+    if ('touches' in e && e.touches.length === 2) {
+      const t1 = e.touches[0];
+      const t2 = e.touches[1];
+      const dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+
+      let target: 'topText' | 'bottomText' | 'layer' | null = null;
+      let layerId: string | null = activeLayerId;
+      let initialScale = 1.0;
+      let initialFontSize = 48;
+
+      if (activeLayerId) {
+        target = 'layer';
+        const layer = overlayLayers.find((l) => l.id === activeLayerId);
+        if (layer) initialScale = layer.scale;
+      } else if (selectedTextTarget === 'top') {
+        target = 'topText';
+        initialFontSize = topStyle.fontSize;
+      } else if (selectedTextTarget === 'bottom') {
+        target = 'bottomText';
+        initialFontSize = bottomStyle.fontSize;
+      }
+
+      pinchRef.current = {
+        initialDist: dist,
+        target,
+        layerId,
+        initialFontSize,
+        initialScale,
+      };
+
+      setIsDraggingLayer(false);
+      return;
+    }
+
     const { mouseX, mouseY } = getCanvasCoords(e);
 
     // Check hit on Top Text
@@ -588,8 +633,34 @@ export default function MemeGeneratorPage() {
     setActiveDragTarget(null);
   };
 
-  // Move dragging (Mouse / Touch)
+  // Move dragging or pinch-zooming (Mouse / Touch)
   const moveDrag = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    // Handle 2-finger touch pinch zoom move
+    if ('touches' in e && e.touches.length === 2 && pinchRef.current) {
+      const t1 = e.touches[0];
+      const t2 = e.touches[1];
+      const currentDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+
+      if (pinchRef.current.initialDist > 0) {
+        const scaleFactor = currentDist / pinchRef.current.initialDist;
+        const p = pinchRef.current;
+
+        if (p.target === 'layer' && p.layerId) {
+          const newScale = Math.max(0.1, Math.min(4.0, Number((p.initialScale * scaleFactor).toFixed(2))));
+          setOverlayLayers((prev) =>
+            prev.map((layer) => (layer.id === p.layerId ? { ...layer, scale: newScale } : layer))
+          );
+        } else if (p.target === 'topText') {
+          const newFontSize = Math.max(14, Math.min(180, Math.round(p.initialFontSize * scaleFactor)));
+          setTopStyle((prev) => ({ ...prev, fontSize: newFontSize }));
+        } else if (p.target === 'bottomText') {
+          const newFontSize = Math.max(14, Math.min(180, Math.round(p.initialFontSize * scaleFactor)));
+          setBottomStyle((prev) => ({ ...prev, fontSize: newFontSize }));
+        }
+      }
+      return;
+    }
+
     if (!isDraggingLayer) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -616,6 +687,10 @@ export default function MemeGeneratorPage() {
   };
 
   const endDrag = () => {
+    if (pinchRef.current) {
+      pinchRef.current = null;
+      pushHistorySnapshot();
+    }
     if (isDraggingLayer) {
       setIsDraggingLayer(false);
       pushHistorySnapshot();
@@ -771,8 +846,8 @@ export default function MemeGeneratorPage() {
             />
           </div>
 
-          <p className="text-[11px] font-semibold text-gray-400 mt-2">
-            💡 Tip: Drag text or PNG overlays on canvas! Press <kbd className="px-1 py-0.5 rounded bg-gray-200 text-gray-800 text-[10px]">Ctrl+Z</kbd> to Undo.
+          <p className="text-[11px] font-semibold text-gray-400 mt-2 text-center">
+            💡 Tip: Drag text or PNG overlays on canvas! Pinch with 2 fingers to Zoom In/Out on mobile.
           </p>
 
           {/* Action Toolbar */}
