@@ -1309,6 +1309,27 @@ export default function MemeGeneratorPage() {
             💡 Tip: Drag text or PNG overlays on canvas! Pinch with 2 fingers to Zoom In/Out on mobile.
           </p>
 
+          {/* Hidden File Inputs */}
+          <input
+            ref={bgFileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              if (e.target.files?.[0]) handleBgFileUpload(e.target.files[0]);
+            }}
+          />
+
+          <input
+            ref={overlayFileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              if (e.target.files?.[0]) handleOverlayFileUpload(e.target.files[0]);
+            }}
+          />
+
           {/* Action Toolbar */}
           <div className="flex flex-wrap items-center justify-between gap-3 w-full mt-4">
             <div className="flex items-center gap-2">
@@ -1328,27 +1349,6 @@ export default function MemeGeneratorPage() {
                 <span>+ Add Overlay PNG</span>
               </button>
             </div>
-          </div>
-
-            <input
-              ref={bgFileInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => {
-                if (e.target.files?.[0]) handleBgFileUpload(e.target.files[0]);
-              }}
-            />
-
-            <input
-              ref={overlayFileInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => {
-                if (e.target.files?.[0]) handleOverlayFileUpload(e.target.files[0]);
-              }}
-            />
 
             <div className="flex items-center gap-2">
               <button
@@ -2313,6 +2313,8 @@ export default function MemeGeneratorPage() {
 
         </div>
 
-      </main>
-    );
-  }
+      </div>
+
+    </main>
+  );
+}
