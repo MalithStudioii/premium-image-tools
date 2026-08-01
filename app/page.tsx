@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Minimize2, Crop, Scaling, EyeOff, Palette, Smile, Sparkles, Shield, Zap, Lock, ArrowRight, Check } from 'lucide-react';
+import { Minimize2, Crop, Scaling, EyeOff, Palette, Smile, Wand2, Sparkles, Shield, Zap, Lock, ArrowRight, Check } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { TypewriterText } from '@/components/TypewriterText';
 
@@ -54,7 +54,50 @@ export default function Home() {
       </motion.div>
 
       {/* Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 w-full mb-20">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full mb-20">
+        
+        {/* Photo Studio Card */}
+        <motion.div
+          whileHover={{ y: -6, transition: { duration: 0.2 } }}
+          className="group relative bg-white p-7 rounded-3xl shadow-sm hover:shadow-2xl hover:shadow-violet-500/10 border border-gray-100 transition-all duration-300 flex flex-col justify-between overflow-hidden"
+        >
+          <div className="absolute top-0 right-0 w-32 h-32 bg-violet-500/5 rounded-full blur-2xl group-hover:bg-violet-500/10 transition-colors" />
+
+          <div>
+            <div className="w-14 h-14 rounded-2xl bg-violet-50 text-violet-600 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300 shadow-xs">
+              <Wand2 className="w-7 h-7" />
+            </div>
+
+            <span className="text-[11px] font-bold uppercase tracking-wider text-violet-600 bg-violet-50 px-2 py-0.5 rounded-md">
+              Pro Photo Studio
+            </span>
+
+            <h2 className="text-xl font-bold text-gray-900 mt-2 mb-2">
+              Photo Studio & FX
+            </h2>
+
+            <p className="text-gray-500 text-xs leading-relaxed mb-6">
+              Full photo editor with 20 social media presets, background removal, light beams & lens flares.
+            </p>
+
+            <ul className="space-y-2 mb-6 text-xs font-medium text-gray-600">
+              <li className="flex items-center gap-1.5">
+                <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" /> TikTok, FB, IG (20 Presets)
+              </li>
+              <li className="flex items-center gap-1.5">
+                <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" /> Volumetric Light & Lens Flares
+              </li>
+            </ul>
+          </div>
+
+          <Link
+            href="/photo-editor"
+            className="w-full py-3 px-4 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md shadow-violet-500/20 group-hover:shadow-lg group-hover:shadow-violet-500/30 transition-all cursor-pointer"
+          >
+            <span>Open Photo Studio</span>
+            <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+          </Link>
+        </motion.div>
         
         {/* Compressor Card */}
         <motion.div
