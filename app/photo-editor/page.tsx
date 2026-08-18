@@ -127,7 +127,8 @@ export default function PhotoEditorPage() {
   const [selectedTemplate, setSelectedTemplate] = useState<PresetTemplate>(TEMPLATE_PRESETS[0]);
   const [bgMode, setBgMode] = useState<'transparent' | 'solid' | 'gradient' | 'blur'>('transparent');
   const [bgColor, setBgColor] = useState<string>('#ffffff');
-  const [bgGradient] = useState<string>('linear-gradient(135deg, #667eea 0%, #764ba2 100%)');
+  const [bgGradient, setBgGradient] = useState<string>('linear-gradient(135deg, #667eea 0%, #764ba2 100%)');
+  const [presetCategory, setPresetCategory] = useState<string>('All');
 
   // Eraser Tool state
   const [eraserTool, setEraserTool] = useState<'none' | 'wand' | 'erase' | 'restore'>('erase');
@@ -237,15 +238,24 @@ export default function PhotoEditorPage() {
       ctx.fillRect(0, 0, targetW, targetH);
     } else if (bgMode === 'gradient') {
       const grad = ctx.createLinearGradient(0, 0, targetW, targetH);
-      if (bgGradient.includes('#667eea')) {
-        grad.addColorStop(0, '#667eea');
-        grad.addColorStop(1, '#764ba2');
-      } else if (bgGradient.includes('#ff7e5f')) {
+      if (bgGradient.includes('#ff7e5f')) {
         grad.addColorStop(0, '#ff7e5f');
         grad.addColorStop(1, '#feb47b');
-      } else {
+      } else if (bgGradient.includes('#00c6ff')) {
         grad.addColorStop(0, '#00c6ff');
         grad.addColorStop(1, '#0072ff');
+      } else if (bgGradient.includes('#f093fb')) {
+        grad.addColorStop(0, '#f093fb');
+        grad.addColorStop(1, '#f5576c');
+      } else if (bgGradient.includes('#0ba360')) {
+        grad.addColorStop(0, '#0ba360');
+        grad.addColorStop(1, '#3cba92');
+      } else if (bgGradient.includes('#141e30')) {
+        grad.addColorStop(0, '#141e30');
+        grad.addColorStop(1, '#243b55');
+      } else {
+        grad.addColorStop(0, '#667eea');
+        grad.addColorStop(1, '#764ba2');
       }
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, targetW, targetH);
@@ -1578,11 +1588,35 @@ export default function PhotoEditorPage() {
             {activeTab === 'templates' && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-5">
                 <div>
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-3">
-                    20 Social Media & Dimension Presets
-                  </h3>
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500">
+                      20 Social Media & Dimension Presets
+                    </h3>
+                    <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 px-2 py-0.5 rounded-full">
+                      {selectedTemplate.name}
+                    </span>
+                  </div>
+
+                  {/* Category Filter Pills */}
+                  <div className="flex overflow-x-auto no-scrollbar gap-1.5 pb-2 mb-1">
+                    {['All', 'Instagram', 'TikTok', 'YouTube', 'Facebook', 'X/Twitter', 'LinkedIn', 'Others'].map((cat) => (
+                      <button
+                        key={cat}
+                        onClick={() => setPresetCategory(cat)}
+                        className={`px-2.5 py-1 rounded-xl text-[11px] font-bold shrink-0 transition-all cursor-pointer border ${
+                          presetCategory === cat
+                            ? 'bg-indigo-600 border-indigo-600 text-white shadow-xs'
+                            : 'bg-gray-100 dark:bg-gray-800 border-transparent hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300'
+                        }`}
+                      >
+                        {cat}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Presets Grid */}
                   <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto pr-1">
-                    {TEMPLATE_PRESETS.map((preset) => {
+                    {TEMPLATE_PRESETS.filter((p) => presetCategory === 'All' || p.category === presetCategory).map((preset) => {
                       const isSelected = selectedTemplate.id === preset.id;
                       return (
                         <button
@@ -1591,19 +1625,19 @@ export default function PhotoEditorPage() {
                             setSelectedTemplate(preset);
                             setTimeout(saveHistoryStep, 50);
                           }}
-                          className={`p-3 rounded-2xl border text-left transition-all cursor-pointer ${
+                          className={`p-2.5 rounded-2xl border-2 text-left transition-all cursor-pointer ${
                             isSelected
-                              ? 'border-indigo-600 bg-indigo-50/70 text-indigo-900 ring-2 ring-indigo-500/20 font-bold'
-                              : 'border-gray-200 hover:border-indigo-300 hover:bg-gray-50 text-gray-700 font-medium'
+                              ? 'border-indigo-600 dark:border-indigo-500 bg-indigo-50/80 dark:bg-indigo-950/80 text-indigo-950 dark:text-indigo-200 ring-2 ring-indigo-500/20 font-bold shadow-xs'
+                              : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/60 hover:border-indigo-300 dark:hover:border-indigo-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-900 dark:text-gray-100 font-medium'
                           }`}
                         >
                           <div className="flex items-center justify-between text-xs mb-1">
                             <span className="font-bold truncate">{preset.name}</span>
-                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-200/80 text-gray-600 font-mono">
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-200/80 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-mono">
                               {preset.aspectLabel}
                             </span>
                           </div>
-                          <p className="text-[10px] text-gray-500">
+                          <p className="text-[10px] text-gray-500 dark:text-gray-400">
                             {preset.width > 0 ? `${preset.width} × ${preset.height} px` : 'Fit Image Size'}
                           </p>
                         </button>
@@ -1612,9 +1646,9 @@ export default function PhotoEditorPage() {
                   </div>
                 </div>
 
-                {/* Canvas Backdrop */}
-                <div>
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-3">
+                {/* Canvas Backdrop Fill */}
+                <div className="space-y-3 pt-2 border-t border-gray-100 dark:border-gray-800">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500">
                     Canvas Backdrop Fill
                   </h3>
                   <div className="grid grid-cols-4 gap-2">
@@ -1630,10 +1664,10 @@ export default function PhotoEditorPage() {
                           setBgMode(mode.id as 'transparent' | 'solid' | 'gradient' | 'blur');
                           setTimeout(saveHistoryStep, 50);
                         }}
-                        className={`py-2 px-2 rounded-xl text-xs font-bold border text-center transition-all cursor-pointer ${
+                        className={`py-2 px-1.5 rounded-xl text-xs font-bold border text-center transition-all cursor-pointer ${
                           bgMode === mode.id
-                            ? 'border-indigo-600 bg-indigo-50 text-indigo-700 shadow-xs'
-                            : 'border-gray-200 hover:bg-gray-50 text-gray-600'
+                            ? 'border-indigo-600 bg-indigo-600 text-white shadow-sm'
+                            : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/60 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'
                         }`}
                       >
                         {mode.label}
@@ -1641,18 +1675,66 @@ export default function PhotoEditorPage() {
                     ))}
                   </div>
 
+                  {/* Solid Color Options */}
                   {bgMode === 'solid' && (
-                    <div className="mt-3 flex items-center gap-3">
-                      <label className="text-xs font-bold text-gray-700">Color:</label>
-                      <input
-                        type="color"
-                        value={bgColor}
-                        onChange={(e) => {
-                          setBgColor(e.target.value);
-                          setTimeout(saveHistoryStep, 100);
-                        }}
-                        className="w-8 h-8 rounded-lg border border-gray-300 cursor-pointer"
-                      />
+                    <div className="p-3 rounded-2xl border border-gray-200 dark:border-gray-700 space-y-2">
+                      <span className="text-xs font-bold text-gray-700 dark:text-gray-300 block">Select Solid Background Color:</span>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={bgColor}
+                          onChange={(e) => {
+                            setBgColor(e.target.value);
+                            setTimeout(saveHistoryStep, 100);
+                          }}
+                          className="w-8 h-8 rounded-lg border border-gray-300 dark:border-gray-600 cursor-pointer shrink-0"
+                        />
+                        <div className="flex flex-wrap gap-1.5">
+                          {['#ffffff', '#000000', '#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'].map((hex) => (
+                            <button
+                              key={hex}
+                              onClick={() => {
+                                setBgColor(hex);
+                                setTimeout(saveHistoryStep, 100);
+                              }}
+                              className={`w-6 h-6 rounded-full border-2 transition-transform cursor-pointer ${
+                                bgColor.toLowerCase() === hex.toLowerCase() ? 'scale-110 border-indigo-600 shadow-md' : 'border-gray-300 dark:border-gray-600'
+                              }`}
+                              style={{ backgroundColor: hex }}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Gradient Style Options */}
+                  {bgMode === 'gradient' && (
+                    <div className="p-3 rounded-2xl border border-gray-200 dark:border-gray-700 space-y-2">
+                      <span className="text-xs font-bold text-gray-700 dark:text-gray-300 block">Select Gradient Style:</span>
+                      <div className="grid grid-cols-3 gap-2">
+                        {[
+                          { id: '#667eea', label: 'Sunset Purple', style: 'from-[#667eea] to-[#764ba2]' },
+                          { id: '#ff7e5f', label: 'Warm Sunset', style: 'from-[#ff7e5f] to-[#feb47b]' },
+                          { id: '#00c6ff', label: 'Ocean Blue', style: 'from-[#00c6ff] to-[#0072ff]' },
+                          { id: '#f093fb', label: 'Pink Glam', style: 'from-[#f093fb] to-[#f5576c]' },
+                          { id: '#0ba360', label: 'Neon Emerald', style: 'from-[#0ba360] to-[#3cba92]' },
+                          { id: '#141e30', label: 'Dark Cyber', style: 'from-[#141e30] to-[#243b55]' },
+                        ].map((g) => (
+                          <button
+                            key={g.id}
+                            onClick={() => {
+                              setBgGradient(g.id);
+                              setTimeout(saveHistoryStep, 100);
+                            }}
+                            className={`p-2 rounded-xl text-[10px] font-bold text-white bg-gradient-to-r ${g.style} transition-all cursor-pointer border-2 ${
+                              bgGradient.includes(g.id) ? 'border-white scale-105 shadow-md' : 'border-transparent opacity-85 hover:opacity-100'
+                            }`}
+                          >
+                            {g.label}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>
