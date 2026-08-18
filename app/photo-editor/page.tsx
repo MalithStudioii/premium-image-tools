@@ -2226,12 +2226,188 @@ export default function PhotoEditorPage() {
                       className={`py-2 px-2 rounded-xl text-xs font-bold border text-center transition-all cursor-pointer ${
                         blurMode === mode.id
                           ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300'
-                          : 'border-gray-200 hover:bg-gray-50 text-gray-600'
+                          : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400'
                       }`}
                     >
                       {mode.label}
                     </button>
                   ))}
+                </div>
+
+                {blurMode === 'gaussian' && (
+                  <div className="p-3.5 rounded-2xl border border-gray-200 dark:border-gray-700 space-y-2">
+                    <div className="flex justify-between text-xs text-gray-700 dark:text-gray-300 font-bold">
+                      <span>Gaussian Blur Radius:</span>
+                      <span>{blurSettings.gaussian}px</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="1"
+                      max="40"
+                      value={blurSettings.gaussian}
+                      onChange={(e) => setBlurSettings({ ...blurSettings, gaussian: Number(e.target.value) })}
+                      onMouseUp={() => saveHistoryStep()}
+                      className="w-full accent-indigo-600"
+                    />
+                  </div>
+                )}
+
+                {blurMode === 'radial' && (
+                  <div className="p-3.5 rounded-2xl border border-gray-200 dark:border-gray-700 space-y-2">
+                    <div className="flex justify-between text-xs text-gray-700 dark:text-gray-300 font-bold">
+                      <span>Radial Zoom Radius:</span>
+                      <span>{blurSettings.radial}px</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="5"
+                      max="50"
+                      value={blurSettings.radial}
+                      onChange={(e) => setBlurSettings({ ...blurSettings, radial: Number(e.target.value) })}
+                      onMouseUp={() => saveHistoryStep()}
+                      className="w-full accent-indigo-600"
+                    />
+                  </div>
+                )}
+              </motion.div>
+            )}
+
+            {/* TAB 7: TUNE (ADJUSTMENTS & COLOR GRADING) */}
+            {activeTab === 'adjustments' && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500">
+                    Pro Color Grading & Tune
+                  </h3>
+                  <button
+                    onClick={() => {
+                      setAdjustments({ brightness: 0, contrast: 0, saturation: 0, warmth: 0, vignette: 0 });
+                      setTimeout(saveHistoryStep, 50);
+                    }}
+                    className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 cursor-pointer"
+                  >
+                    <RotateCcw className="w-3 h-3" />
+                    <span>Reset</span>
+                  </button>
+                </div>
+
+                {/* Quick Mood Presets */}
+                <div>
+                  <span className="text-[11px] font-bold text-gray-500 block mb-1.5">Quick Mood Presets:</span>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {[
+                      { name: 'Natural', b: 0, c: 0, s: 0, w: 0, v: 0 },
+                      { name: 'Vibrant', b: 10, c: 15, s: 30, w: 5, v: 10 },
+                      { name: 'Cinematic', b: 5, c: 20, s: -5, w: 25, v: 20 },
+                      { name: 'Moody', b: -10, c: 25, s: -15, w: -10, v: 35 },
+                      { name: 'Airy', b: 20, c: 5, s: 15, w: -5, v: 0 },
+                      { name: 'B&W Noir', b: 0, c: 30, s: -100, w: 0, v: 25 },
+                    ].map((preset) => (
+                      <button
+                        key={preset.name}
+                        onClick={() => {
+                          setAdjustments({
+                            brightness: preset.b,
+                            contrast: preset.c,
+                            saturation: preset.s,
+                            warmth: preset.w,
+                            vignette: preset.v,
+                          });
+                          setTimeout(saveHistoryStep, 50);
+                        }}
+                        className="py-1.5 px-2 rounded-xl text-[11px] font-bold bg-gray-100 dark:bg-gray-800 hover:bg-indigo-50 dark:hover:bg-indigo-950 hover:text-indigo-600 dark:hover:text-indigo-300 text-gray-700 dark:text-gray-300 transition-colors border border-transparent hover:border-indigo-300 dark:hover:border-indigo-700 cursor-pointer text-center"
+                      >
+                        {preset.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 1. Brightness */}
+                <div className="p-3 rounded-2xl border border-gray-200 dark:border-gray-700 space-y-1.5">
+                  <div className="flex justify-between text-xs text-gray-700 dark:text-gray-300 font-bold">
+                    <span>Brightness:</span>
+                    <span>{adjustments.brightness > 0 ? `+${adjustments.brightness}` : adjustments.brightness}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="-80"
+                    max="80"
+                    value={adjustments.brightness}
+                    onChange={(e) => setAdjustments({ ...adjustments, brightness: Number(e.target.value) })}
+                    onMouseUp={() => saveHistoryStep()}
+                    className="w-full accent-indigo-600"
+                  />
+                </div>
+
+                {/* 2. Contrast */}
+                <div className="p-3 rounded-2xl border border-gray-200 dark:border-gray-700 space-y-1.5">
+                  <div className="flex justify-between text-xs text-gray-700 dark:text-gray-300 font-bold">
+                    <span>Contrast:</span>
+                    <span>{adjustments.contrast > 0 ? `+${adjustments.contrast}` : adjustments.contrast}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="-80"
+                    max="80"
+                    value={adjustments.contrast}
+                    onChange={(e) => setAdjustments({ ...adjustments, contrast: Number(e.target.value) })}
+                    onMouseUp={() => saveHistoryStep()}
+                    className="w-full accent-indigo-600"
+                  />
+                </div>
+
+                {/* 3. Saturation */}
+                <div className="p-3 rounded-2xl border border-gray-200 dark:border-gray-700 space-y-1.5">
+                  <div className="flex justify-between text-xs text-gray-700 dark:text-gray-300 font-bold">
+                    <span>Saturation / Vibrance:</span>
+                    <span>{adjustments.saturation > 0 ? `+${adjustments.saturation}` : adjustments.saturation}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="-100"
+                    max="100"
+                    value={adjustments.saturation}
+                    onChange={(e) => setAdjustments({ ...adjustments, saturation: Number(e.target.value) })}
+                    onMouseUp={() => saveHistoryStep()}
+                    className="w-full accent-indigo-600"
+                  />
+                </div>
+
+                {/* 4. Warmth / Color Temp */}
+                <div className="p-3 rounded-2xl border border-gray-200 dark:border-gray-700 space-y-1.5">
+                  <div className="flex justify-between text-xs text-gray-700 dark:text-gray-300 font-bold">
+                    <span>Color Temperature / Warmth:</span>
+                    <span className={adjustments.warmth > 0 ? 'text-amber-500' : adjustments.warmth < 0 ? 'text-cyan-500' : ''}>
+                      {adjustments.warmth > 0 ? `+${adjustments.warmth} Warm` : adjustments.warmth < 0 ? `${adjustments.warmth} Cool` : '0 Neutral'}
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min="-80"
+                    max="80"
+                    value={adjustments.warmth}
+                    onChange={(e) => setAdjustments({ ...adjustments, warmth: Number(e.target.value) })}
+                    onMouseUp={() => saveHistoryStep()}
+                    className="w-full accent-amber-500"
+                  />
+                </div>
+
+                {/* 5. Vignette Falloff */}
+                <div className="p-3 rounded-2xl border border-gray-200 dark:border-gray-700 space-y-1.5">
+                  <div className="flex justify-between text-xs text-gray-700 dark:text-gray-300 font-bold">
+                    <span>Vignette Edge Falloff:</span>
+                    <span>{adjustments.vignette}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="90"
+                    value={adjustments.vignette}
+                    onChange={(e) => setAdjustments({ ...adjustments, vignette: Number(e.target.value) })}
+                    onMouseUp={() => saveHistoryStep()}
+                    className="w-full accent-purple-600"
+                  />
                 </div>
               </motion.div>
             )}
