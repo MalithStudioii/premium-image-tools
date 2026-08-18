@@ -370,47 +370,86 @@ export default function PhotoEditorPage() {
       ctx.save();
       ctx.globalCompositeOperation = 'screen';
       const neonColor = lightFx.neonColor || '#00f2fe';
-      const glowRad = (lightFx.neonRadius || 25) * (Math.min(targetW, targetH) / 500);
+      const glowRadius = Math.max(10, lightFx.neonRadius || 25);
 
-      const mCanvas = maskCanvasRef.current;
-      if (mCanvas) {
-        const glowCanvas = document.createElement('canvas');
-        glowCanvas.width = targetW;
-        glowCanvas.height = targetH;
-        const gCtx = glowCanvas.getContext('2d');
-        if (gCtx) {
-          gCtx.save();
-          gCtx.shadowColor = neonColor;
-          gCtx.shadowBlur = glowRad * 2;
-          gCtx.shadowOffsetX = 0;
-          gCtx.shadowOffsetY = 0;
+      // 1. Soft Radial Neon Atmospheric Aura
+      const centerX = targetW / 2;
+      const centerY = targetH / 2;
+      const auraGrad = ctx.createRadialGradient(
+        centerX, centerY, Math.min(targetW, targetH) * 0.15,
+        centerX, centerY, Math.max(targetW, targetH) * 0.75 + glowRadius
+      );
+      auraGrad.addColorStop(0, 'rgba(0,0,0,0)');
+      auraGrad.addColorStop(0.5, neonColor + '22');
+      auraGrad.addColorStop(0.85, neonColor + '55');
+      auraGrad.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = auraGrad;
+      ctx.fillRect(0, 0, targetW, targetH);
 
-          if (selectedTemplate.id !== 'original') {
-            const scale = Math.min(targetW / origDimensions.width, targetH / origDimensions.height);
-            const drawW = origDimensions.width * scale;
-            const drawH = origDimensions.height * scale;
-            const drawX = (targetW - drawW) / 2;
-            const drawY = (targetH - drawH) / 2;
-            gCtx.drawImage(mCanvas, drawX, drawY, drawW, drawH);
-          } else {
-            gCtx.drawImage(mCanvas, 0, 0, targetW, targetH);
-          }
-          gCtx.restore();
+      // 2. Glowing Neon Border Frame
+      const pad = Math.max(10, Math.min(24, targetW * 0.02));
+      ctx.save();
+      ctx.strokeStyle = neonColor;
+      ctx.shadowColor = neonColor;
+      ctx.shadowBlur = glowRadius * 1.5;
+      ctx.lineWidth = Math.max(2, Math.min(6, glowRadius / 12));
+      
+      const r = 16;
+      const bx = pad;
+      const by = pad;
+      const bw = targetW - pad * 2;
+      const bh = targetH - pad * 2;
 
-          ctx.drawImage(glowCanvas, 0, 0);
-          ctx.drawImage(glowCanvas, 0, 0);
-        }
+      ctx.beginPath();
+      if (typeof ctx.roundRect === 'function') {
+        ctx.roundRect(bx, by, bw, bh, r);
       } else {
-        const auraGrad = ctx.createRadialGradient(
-          targetW / 2, targetH / 2, Math.min(targetW, targetH) * 0.15,
-          targetW / 2, targetH / 2, Math.min(targetW, targetH) * 0.65 + glowRad
-        );
-        auraGrad.addColorStop(0, neonColor + 'aa');
-        auraGrad.addColorStop(0.5, neonColor + '44');
-        auraGrad.addColorStop(1, 'rgba(0,0,0,0)');
-        ctx.fillStyle = auraGrad;
-        ctx.fillRect(0, 0, targetW, targetH);
+        ctx.rect(bx, by, bw, bh);
       }
+      ctx.stroke();
+      ctx.restore();
+
+      // 3. Futuristic Cyber Brackets on 4 Corners
+      const cLen = Math.max(20, Math.min(60, Math.min(targetW, targetH) * 0.08));
+      ctx.save();
+      ctx.strokeStyle = '#ffffff';
+      ctx.shadowColor = neonColor;
+      ctx.shadowBlur = glowRadius * 2;
+      ctx.lineWidth = Math.max(3, Math.min(7, glowRadius / 10));
+
+      // Top-Left
+      ctx.beginPath();
+      ctx.moveTo(bx, by + cLen);
+      ctx.lineTo(bx, by + r);
+      ctx.arcTo(bx, by, bx + r, by, r);
+      ctx.lineTo(bx + cLen, by);
+      ctx.stroke();
+
+      // Top-Right
+      ctx.beginPath();
+      ctx.moveTo(bx + bw - cLen, by);
+      ctx.lineTo(bx + bw - r, by);
+      ctx.arcTo(bx + bw, by, bx + bw, by + r, r);
+      ctx.lineTo(bx + bw, by + cLen);
+      ctx.stroke();
+
+      // Bottom-Left
+      ctx.beginPath();
+      ctx.moveTo(bx, by + bh - cLen);
+      ctx.lineTo(bx, by + bh - r);
+      ctx.arcTo(bx, by + bh, bx + r, by + bh, r);
+      ctx.lineTo(bx + cLen, by + bh);
+      ctx.stroke();
+
+      // Bottom-Right
+      ctx.beginPath();
+      ctx.moveTo(bx + bw - cLen, by + bh);
+      ctx.lineTo(bx + bw - r, by + bh);
+      ctx.arcTo(bx + bw, by + bh, bx + bw, by + bh - r, r);
+      ctx.lineTo(bx + bw, by + bh - cLen);
+      ctx.stroke();
+
+      ctx.restore();
       ctx.restore();
     }
 
