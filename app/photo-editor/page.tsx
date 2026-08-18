@@ -55,26 +55,35 @@ const TEMPLATE_PRESETS: PresetTemplate[] = [
   { id: 'dt-wallpaper', name: 'Desktop HD Wallpaper', category: 'Others', width: 1920, height: 1080, aspectLabel: '16:9' }
 ];
 
+interface LightFxState {
+  sunbeamEnabled: boolean;
+  sunbeamAngle: number;
+  sunbeamIntensity: number;
+  pos: { x: number; y: number };
+  neonEnabled: boolean;
+  neonColor: string;
+  neonRadius: number;
+  goldenHourEnabled: boolean;
+  goldenHourWarmth: number;
+  particlesEnabled: boolean;
+  particlesCount: number;
+  mistEnabled: boolean;
+  mistIntensity: number;
+  bokehEnabled: boolean;
+  bokehOpacity: number;
+  leakEnabled: boolean;
+  leakType: string;
+  leakOpacity: number;
+  spotlightEnabled: boolean;
+  spotlightIntensity: number;
+}
+
 interface HistoryStep {
   maskDataUrl: string;
   selectedTemplateId: string;
   bgMode: 'transparent' | 'solid' | 'gradient' | 'blur';
   bgColor: string;
-  lightFx: {
-    sunbeamEnabled: boolean;
-    sunbeamAngle: number;
-    sunbeamIntensity: number;
-    neonEnabled: boolean;
-    neonColor: string;
-    neonRadius: number;
-    bokehEnabled: boolean;
-    bokehOpacity: number;
-    leakEnabled: boolean;
-    leakType: string;
-    leakOpacity: number;
-    spotlightEnabled: boolean;
-    spotlightIntensity: number;
-  };
+  lightFx: LightFxState;
   flare: {
     enabled: boolean;
     type: 'anamorphic' | 'sunburst' | 'hexagon';
@@ -136,13 +145,20 @@ export default function PhotoEditorPage() {
   const [aiError, setAiError] = useState<string | null>(null);
 
   // Light FX state
-  const [lightFx, setLightFx] = useState({
+  const [lightFx, setLightFx] = useState<LightFxState>({
     sunbeamEnabled: false,
     sunbeamAngle: 45,
-    sunbeamIntensity: 50,
+    sunbeamIntensity: 60,
+    pos: { x: 0.25, y: 0.15 },
     neonEnabled: false,
-    neonColor: '#3b82f6',
-    neonRadius: 20,
+    neonColor: '#00f2fe',
+    neonRadius: 25,
+    goldenHourEnabled: false,
+    goldenHourWarmth: 55,
+    particlesEnabled: false,
+    particlesCount: 40,
+    mistEnabled: false,
+    mistIntensity: 50,
     bokehEnabled: false,
     bokehOpacity: 40,
     leakEnabled: false,
@@ -151,6 +167,7 @@ export default function PhotoEditorPage() {
     spotlightEnabled: false,
     spotlightIntensity: 40,
   });
+  const [isDraggingLight, setIsDraggingLight] = useState(false);
 
   // Lens Flare state
   const [flare, setFlare] = useState({
@@ -346,59 +363,158 @@ export default function PhotoEditorPage() {
       ctx.restore();
     }
 
-    // 5. LIGHT EFFECTS OVERLAY
+    // 5. LIGHT & ATMOSPHERE EFFECTS OVERLAY
+    
+    // 5.1 CYBER NEON AURA GLOW
+    if (lightFx.neonEnabled) {
+      ctx.save();
+      ctx.globalCompositeOperation = 'screen';
+      const neonColor = lightFx.neonColor || '#00f2fe';
+      const glowRad = (lightFx.neonRadius || 25) * (Math.min(targetW, targetH) / 500);
+
+      const mCanvas = maskCanvasRef.current;
+      if (mCanvas) {
+        const glowCanvas = document.createElement('canvas');
+        glowCanvas.width = targetW;
+        glowCanvas.height = targetH;
+        const gCtx = glowCanvas.getContext('2d');
+        if (gCtx) {
+          gCtx.save();
+          gCtx.shadowColor = neonColor;
+          gCtx.shadowBlur = glowRad * 2;
+          gCtx.shadowOffsetX = 0;
+          gCtx.shadowOffsetY = 0;
+
+          if (selectedTemplate.id !== 'original') {
+            const scale = Math.min(targetW / origDimensions.width, targetH / origDimensions.height);
+            const drawW = origDimensions.width * scale;
+            const drawH = origDimensions.height * scale;
+            const drawX = (targetW - drawW) / 2;
+            const drawY = (targetH - drawH) / 2;
+            gCtx.drawImage(mCanvas, drawX, drawY, drawW, drawH);
+          } else {
+            gCtx.drawImage(mCanvas, 0, 0, targetW, targetH);
+          }
+          gCtx.restore();
+
+          ctx.drawImage(glowCanvas, 0, 0);
+          ctx.drawImage(glowCanvas, 0, 0);
+        }
+      } else {
+        const auraGrad = ctx.createRadialGradient(
+          targetW / 2, targetH / 2, Math.min(targetW, targetH) * 0.15,
+          targetW / 2, targetH / 2, Math.min(targetW, targetH) * 0.65 + glowRad
+        );
+        auraGrad.addColorStop(0, neonColor + 'aa');
+        auraGrad.addColorStop(0.5, neonColor + '44');
+        auraGrad.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = auraGrad;
+        ctx.fillRect(0, 0, targetW, targetH);
+      }
+      ctx.restore();
+    }
+
+    // 5.2 GOLDEN HOUR / SUNRISE GLOW
+    if (lightFx.goldenHourEnabled) {
+      ctx.save();
+      ctx.globalCompositeOperation = 'screen';
+      const warmth = (lightFx.goldenHourWarmth || 55) / 100;
+      const lx = (lightFx.pos?.x ?? 0.25) * targetW;
+      const ly = (lightFx.pos?.y ?? 0.15) * targetH;
+
+      const grad = ctx.createRadialGradient(lx, ly, 30, lx, ly, Math.max(targetW, targetH) * 1.2);
+      grad.addColorStop(0, `rgba(255, 205, 110, ${warmth * 0.75})`);
+      grad.addColorStop(0.3, `rgba(255, 140, 50, ${warmth * 0.5})`);
+      grad.addColorStop(0.7, `rgba(255, 70, 20, ${warmth * 0.22})`);
+      grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, targetW, targetH);
+      ctx.restore();
+    }
+
+    // 5.3 DRAGGABLE SUNBEAMS (GOD RAYS)
     if (lightFx.sunbeamEnabled) {
       ctx.save();
       ctx.globalCompositeOperation = 'screen';
+      const originX = (lightFx.pos?.x ?? 0.25) * targetW;
+      const originY = (lightFx.pos?.y ?? 0.15) * targetH;
+      const intensity = (lightFx.sunbeamIntensity || 60) / 100;
       const beamAngle = (lightFx.sunbeamAngle * Math.PI) / 180;
-      const originX = targetW / 2 + Math.cos(beamAngle) * targetW * 0.6;
-      const originY = targetH / 2 + Math.sin(beamAngle) * targetH * 0.6;
 
-      for (let i = 0; i < 16; i++) {
-        const angle = (i * Math.PI) / 8 + beamAngle;
-        const rad = Math.max(targetW, targetH) * 1.5;
+      for (let i = 0; i < 18; i++) {
+        const angle = (i * Math.PI) / 9 + beamAngle;
+        const rad = Math.max(targetW, targetH) * 1.6;
         const x2 = originX + Math.cos(angle) * rad;
         const y2 = originY + Math.sin(angle) * rad;
 
         const beamGrad = ctx.createLinearGradient(originX, originY, x2, y2);
-        beamGrad.addColorStop(0, `rgba(255, 240, 200, ${lightFx.sunbeamIntensity / 100})`);
-        beamGrad.addColorStop(1, 'rgba(255, 200, 150, 0)');
+        beamGrad.addColorStop(0, `rgba(255, 248, 210, ${intensity * 0.9})`);
+        beamGrad.addColorStop(0.4, `rgba(255, 215, 140, ${intensity * 0.45})`);
+        beamGrad.addColorStop(1, 'rgba(255, 180, 100, 0)');
 
         ctx.beginPath();
         ctx.moveTo(originX, originY);
-        ctx.lineTo(x2 - 40, y2);
-        ctx.lineTo(x2 + 40, y2);
+        ctx.lineTo(x2 - 55, y2);
+        ctx.lineTo(x2 + 55, y2);
         ctx.closePath();
         ctx.fillStyle = beamGrad;
         ctx.fill();
       }
+
+      // Glowing Sun Core
+      const sunCore = ctx.createRadialGradient(originX, originY, 0, originX, originY, 90);
+      sunCore.addColorStop(0, `rgba(255, 255, 255, ${intensity})`);
+      sunCore.addColorStop(0.35, `rgba(255, 225, 140, ${intensity * 0.65})`);
+      sunCore.addColorStop(1, 'rgba(255, 200, 100, 0)');
+      ctx.beginPath();
+      ctx.arc(originX, originY, 90, 0, Math.PI * 2);
+      ctx.fillStyle = sunCore;
+      ctx.fill();
+
       ctx.restore();
     }
 
-    if (lightFx.bokehEnabled) {
+    // 5.4 CINEMATIC FLOATING DUST PARTICLES
+    if (lightFx.particlesEnabled) {
       ctx.save();
       ctx.globalCompositeOperation = 'screen';
-      const opacity = lightFx.bokehOpacity / 100;
-      const seedRnd = (i: number) => Math.sin(i * 9999) * 0.5 + 0.5;
+      const count = lightFx.particlesCount || 40;
+      const seedRnd = (i: number) => Math.sin(i * 12345.67) * 0.5 + 0.5;
 
-      for (let i = 0; i < 30; i++) {
-        const bx = seedRnd(i) * targetW;
-        const by = seedRnd(i + 1) * targetH;
-        const br = 15 + seedRnd(i + 2) * 45;
+      for (let i = 0; i < count; i++) {
+        const px = seedRnd(i * 3) * targetW;
+        const py = seedRnd(i * 3 + 1) * targetH;
+        const pr = (1.5 + seedRnd(i * 3 + 2) * 5.5) * (Math.min(targetW, targetH) / 600);
+        const pAlpha = 0.2 + seedRnd(i * 5) * 0.65;
 
-        const bGrad = ctx.createRadialGradient(bx, by, 0, bx, by, br);
-        bGrad.addColorStop(0, `rgba(255, 255, 255, ${opacity * 0.6})`);
-        bGrad.addColorStop(0.7, `rgba(180, 220, 255, ${opacity * 0.3})`);
-        bGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+        const pGrad = ctx.createRadialGradient(px, py, 0, px, py, pr * 2.5);
+        pGrad.addColorStop(0, `rgba(255, 248, 220, ${pAlpha})`);
+        pGrad.addColorStop(0.4, `rgba(255, 215, 150, ${pAlpha * 0.5})`);
+        pGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
 
         ctx.beginPath();
-        ctx.arc(bx, by, br, 0, Math.PI * 2);
-        ctx.fillStyle = bGrad;
+        ctx.arc(px, py, pr * 2.5, 0, Math.PI * 2);
+        ctx.fillStyle = pGrad;
         ctx.fill();
       }
       ctx.restore();
     }
 
+    // 5.5 ETHEREAL ATMOSPHERIC MIST / FOG
+    if (lightFx.mistEnabled) {
+      ctx.save();
+      ctx.globalCompositeOperation = 'screen';
+      const mistAlpha = ((lightFx.mistIntensity || 50) / 100) * 0.55;
+      const mistGrad = ctx.createLinearGradient(0, targetH * 0.45, 0, targetH);
+      mistGrad.addColorStop(0, 'rgba(230, 240, 255, 0)');
+      mistGrad.addColorStop(0.5, `rgba(220, 235, 255, ${mistAlpha * 0.6})`);
+      mistGrad.addColorStop(1, `rgba(200, 225, 255, ${mistAlpha})`);
+      ctx.fillStyle = mistGrad;
+      ctx.fillRect(0, targetH * 0.45, targetW, targetH * 0.55);
+      ctx.restore();
+    }
+
+    // 5.6 DRAMATIC SPOTLIGHT
     if (lightFx.spotlightEnabled || adjustments.vignette > 0) {
       ctx.save();
       const intensity = Math.max(lightFx.spotlightIntensity, adjustments.vignette) / 100;
@@ -678,8 +794,12 @@ export default function PhotoEditorPage() {
           bgMode: 'transparent',
           bgColor: '#ffffff',
           lightFx: {
-            sunbeamEnabled: false, sunbeamAngle: 45, sunbeamIntensity: 50,
-            neonEnabled: false, neonColor: '#3b82f6', neonRadius: 20,
+            sunbeamEnabled: false, sunbeamAngle: 45, sunbeamIntensity: 60,
+            pos: { x: 0.25, y: 0.15 },
+            neonEnabled: false, neonColor: '#00f2fe', neonRadius: 25,
+            goldenHourEnabled: false, goldenHourWarmth: 55,
+            particlesEnabled: false, particlesCount: 40,
+            mistEnabled: false, mistIntensity: 50,
             bokehEnabled: false, bokehOpacity: 40, leakEnabled: false, leakType: 'warm', leakOpacity: 50,
             spotlightEnabled: false, spotlightIntensity: 40,
           },
@@ -1026,28 +1146,52 @@ export default function PhotoEditorPage() {
     renderStudioCanvas();
   };
 
-  const handleCanvasMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  const getCanvasCoords = (clientX: number, clientY: number) => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
-
+    if (!canvas) return null;
     const rect = canvas.getBoundingClientRect();
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
+    return {
+      x: (clientX - rect.left) * scaleX,
+      y: (clientY - rect.top) * scaleY,
+    };
+  };
 
-    const canvasX = (e.clientX - rect.left) * scaleX;
-    const canvasY = (e.clientY - rect.top) * scaleY;
+  const handlePointerDown = (clientX: number, clientY: number) => {
+    const coords = getCanvasCoords(clientX, clientY);
+    if (!coords || !canvasRef.current) return;
+    const canvas = canvasRef.current;
 
-    if (flare.enabled && activeTab === 'flare') {
-      setIsDraggingFlare(true);
-      setFlare((prev) => ({
+    // 1. Draggable Light FX
+    if (activeTab === 'lightfx') {
+      setIsDraggingLight(true);
+      setLightFx((prev) => ({
         ...prev,
-        pos: { x: canvasX / canvas.width, y: canvasY / canvas.height },
+        pos: {
+          x: Math.max(0.05, Math.min(0.95, coords.x / canvas.width)),
+          y: Math.max(0.05, Math.min(0.95, coords.y / canvas.height)),
+        },
       }));
       return;
     }
 
-    let imgX = canvasX;
-    let imgY = canvasY;
+    // 2. Draggable Lens Flare
+    if (flare.enabled && activeTab === 'flare') {
+      setIsDraggingFlare(true);
+      setFlare((prev) => ({
+        ...prev,
+        pos: {
+          x: Math.max(0.05, Math.min(0.95, coords.x / canvas.width)),
+          y: Math.max(0.05, Math.min(0.95, coords.y / canvas.height)),
+        },
+      }));
+      return;
+    }
+
+    // 3. Cutout Brush / Wand
+    let imgX = coords.x;
+    let imgY = coords.y;
 
     if (selectedTemplate.id !== 'original') {
       const scale = Math.min(canvas.width / origDimensions.width, canvas.height / origDimensions.height);
@@ -1056,8 +1200,8 @@ export default function PhotoEditorPage() {
       const drawX = (canvas.width - drawW) / 2;
       const drawY = (canvas.height - drawH) / 2;
 
-      imgX = (canvasX - drawX) / scale;
-      imgY = (canvasY - drawY) / scale;
+      imgX = (coords.x - drawX) / scale;
+      imgY = (coords.y - drawY) / scale;
     }
 
     if (imgX >= 0 && imgX <= origDimensions.width && imgY >= 0 && imgY <= origDimensions.height) {
@@ -1070,52 +1214,92 @@ export default function PhotoEditorPage() {
     }
   };
 
-  const handleCanvasMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  const handlePointerMove = (clientX: number, clientY: number) => {
+    const coords = getCanvasCoords(clientX, clientY);
+    if (!coords || !canvasRef.current) return;
     const canvas = canvasRef.current;
-    if (!canvas) return;
 
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-    const canvasX = (e.clientX - rect.left) * scaleX;
-    const canvasY = (e.clientY - rect.top) * scaleY;
+    if (isDraggingLight) {
+      setLightFx((prev) => ({
+        ...prev,
+        pos: {
+          x: Math.max(0.05, Math.min(0.95, coords.x / canvas.width)),
+          y: Math.max(0.05, Math.min(0.95, coords.y / canvas.height)),
+        },
+      }));
+      return;
+    }
 
     if (isDraggingFlare && flare.enabled) {
       setFlare((prev) => ({
         ...prev,
         pos: {
-          x: Math.max(0, Math.min(1, canvasX / canvas.width)),
-          y: Math.max(0, Math.min(1, canvasY / canvas.height)),
+          x: Math.max(0.05, Math.min(0.95, coords.x / canvas.width)),
+          y: Math.max(0.05, Math.min(0.95, coords.y / canvas.height)),
         },
       }));
       return;
     }
 
     if (isDrawing && (eraserTool === 'erase' || eraserTool === 'restore')) {
-      let imgX = canvasX;
-      let imgY = canvasY;
+      let imgX = coords.x;
+      let imgY = coords.y;
       if (selectedTemplate.id !== 'original') {
         const scale = Math.min(canvas.width / origDimensions.width, canvas.height / origDimensions.height);
         const drawW = origDimensions.width * scale;
         const drawH = origDimensions.height * scale;
         const drawX = (canvas.width - drawW) / 2;
         const drawY = (canvas.height - drawH) / 2;
-        imgX = (canvasX - drawX) / scale;
-        imgY = (canvasY - drawY) / scale;
+        imgX = (coords.x - drawX) / scale;
+        imgY = (coords.y - drawY) / scale;
       }
       drawBrushOnMask(imgX, imgY);
     }
   };
 
-  const handleCanvasMouseUp = () => {
+  const handlePointerUp = () => {
     if (isDrawing) {
       setIsDrawing(false);
+      saveHistoryStep();
+    }
+    if (isDraggingLight) {
+      setIsDraggingLight(false);
       saveHistoryStep();
     }
     if (isDraggingFlare) {
       setIsDraggingFlare(false);
       saveHistoryStep();
     }
+  };
+
+  const handleCanvasMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    handlePointerDown(e.clientX, e.clientY);
+  };
+
+  const handleCanvasMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    handlePointerMove(e.clientX, e.clientY);
+  };
+
+  const handleCanvasMouseUp = () => {
+    handlePointerUp();
+  };
+
+  const handleCanvasTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (e.touches.length === 1) {
+      const touch = e.touches[0];
+      handlePointerDown(touch.clientX, touch.clientY);
+    }
+  };
+
+  const handleCanvasTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (e.touches.length === 1) {
+      const touch = e.touches[0];
+      handlePointerMove(touch.clientX, touch.clientY);
+    }
+  };
+
+  const handleCanvasTouchEnd = () => {
+    handlePointerUp();
   };
 
   const resetMask = () => {
@@ -1299,7 +1483,12 @@ export default function PhotoEditorPage() {
                     onMouseDown={handleCanvasMouseDown}
                     onMouseMove={handleCanvasMouseMove}
                     onMouseUp={handleCanvasMouseUp}
-                    className="max-w-full max-h-full object-contain cursor-crosshair block"
+                    onMouseLeave={handleCanvasMouseUp}
+                    onTouchStart={handleCanvasTouchStart}
+                    onTouchMove={handleCanvasTouchMove}
+                    onTouchEnd={handleCanvasTouchEnd}
+                    onTouchCancel={handleCanvasTouchEnd}
+                    className="max-w-full max-h-full object-contain cursor-crosshair block touch-none select-none"
                   />
                 </div>
 
@@ -1636,11 +1825,21 @@ export default function PhotoEditorPage() {
             {/* TAB 4: LIGHT FX */}
             {activeTab === 'lightfx' && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">
-                  Volumetric Lighting & Atmosphere
-                </h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500">
+                    Volumetric Lighting & Atmosphere
+                  </h3>
+                  <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 px-2 py-0.5 rounded-full">
+                    ✨ Drag Light on Canvas
+                  </span>
+                </div>
 
-                {/* Sunbeams Toggle */}
+                <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-300/40 dark:border-amber-700/40 text-[11px] text-amber-800 dark:text-amber-200 flex items-center gap-2">
+                  <Move className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                  <span>Touch or click & drag anywhere on the canvas above to reposition the light source in real-time!</span>
+                </div>
+
+                {/* 1. Sunbeams (God Rays) */}
                 <div className="p-3.5 rounded-2xl border border-gray-200 dark:border-gray-700 space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-gray-800 dark:text-gray-200 flex items-center gap-1.5">
@@ -1658,30 +1857,47 @@ export default function PhotoEditorPage() {
                     />
                   </div>
                   {lightFx.sunbeamEnabled && (
-                    <div className="space-y-2 pt-1 border-t border-gray-100 dark:border-gray-800">
-                      <div className="flex justify-between text-xs text-gray-600 dark:text-gray-400">
-                        <span>Ray Intensity:</span>
-                        <span>{lightFx.sunbeamIntensity}%</span>
+                    <div className="space-y-2.5 pt-1 border-t border-gray-100 dark:border-gray-800">
+                      <div>
+                        <div className="flex justify-between text-xs text-gray-600 dark:text-gray-400 mb-1">
+                          <span>Ray Intensity:</span>
+                          <span>{lightFx.sunbeamIntensity}%</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="10"
+                          max="100"
+                          value={lightFx.sunbeamIntensity}
+                          onChange={(e) => setLightFx({ ...lightFx, sunbeamIntensity: Number(e.target.value) })}
+                          onMouseUp={() => saveHistoryStep()}
+                          className="w-full accent-amber-500"
+                        />
                       </div>
-                      <input
-                        type="range"
-                        min="10"
-                        max="100"
-                        value={lightFx.sunbeamIntensity}
-                        onChange={(e) => setLightFx({ ...lightFx, sunbeamIntensity: Number(e.target.value) })}
-                        onMouseUp={() => saveHistoryStep()}
-                        className="w-full accent-amber-500"
-                      />
+                      <div>
+                        <div className="flex justify-between text-xs text-gray-600 dark:text-gray-400 mb-1">
+                          <span>Beam Spread Angle:</span>
+                          <span>{lightFx.sunbeamAngle}°</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="0"
+                          max="360"
+                          value={lightFx.sunbeamAngle}
+                          onChange={(e) => setLightFx({ ...lightFx, sunbeamAngle: Number(e.target.value) })}
+                          onMouseUp={() => saveHistoryStep()}
+                          className="w-full accent-amber-500"
+                        />
+                      </div>
                     </div>
                   )}
                 </div>
 
-                {/* Neon Glow Toggle */}
+                {/* 2. Cyber Neon Aura */}
                 <div className="p-3.5 rounded-2xl border border-gray-200 dark:border-gray-700 space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-gray-800 dark:text-gray-200 flex items-center gap-1.5">
                       <Flame className="w-4 h-4 text-rose-500" />
-                      Cyber Neon Aura
+                      Cyber Neon Aura Glow
                     </span>
                     <input
                       type="checkbox"
@@ -1694,28 +1910,188 @@ export default function PhotoEditorPage() {
                     />
                   </div>
                   {lightFx.neonEnabled && (
-                    <div className="space-y-2 pt-1 border-t border-gray-100 dark:border-gray-800">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-gray-600 dark:text-gray-400">Aura Color:</span>
+                    <div className="space-y-2.5 pt-1 border-t border-gray-100 dark:border-gray-800">
+                      <div>
+                        <span className="text-xs text-gray-600 dark:text-gray-400 block mb-1">Neon Color:</span>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="color"
+                            value={lightFx.neonColor}
+                            onChange={(e) => setLightFx({ ...lightFx, neonColor: e.target.value })}
+                            className="w-8 h-8 rounded-lg cursor-pointer shrink-0 border border-gray-300 dark:border-gray-600"
+                          />
+                          <div className="flex flex-wrap gap-1.5">
+                            {['#00f2fe', '#ff007f', '#a855f7', '#39ff14', '#ffe600', '#3b82f6'].map((hex) => (
+                              <button
+                                key={hex}
+                                onClick={() => setLightFx({ ...lightFx, neonColor: hex })}
+                                className={`w-6 h-6 rounded-full border-2 transition-transform cursor-pointer ${
+                                  lightFx.neonColor.toLowerCase() === hex.toLowerCase() ? 'scale-110 border-white shadow-md' : 'border-transparent'
+                                }`}
+                                style={{ backgroundColor: hex }}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                      <div>
+                        <div className="flex justify-between text-xs text-gray-600 dark:text-gray-400 mb-1">
+                          <span>Glow Radius:</span>
+                          <span>{lightFx.neonRadius}px</span>
+                        </div>
                         <input
-                          type="color"
-                          value={lightFx.neonColor}
-                          onChange={(e) => setLightFx({ ...lightFx, neonColor: e.target.value })}
-                          className="w-6 h-6 rounded cursor-pointer"
+                          type="range"
+                          min="5"
+                          max="80"
+                          value={lightFx.neonRadius}
+                          onChange={(e) => setLightFx({ ...lightFx, neonRadius: Number(e.target.value) })}
+                          onMouseUp={() => saveHistoryStep()}
+                          className="w-full accent-rose-500"
                         />
                       </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* 3. Golden Hour Glow */}
+                <div className="p-3.5 rounded-2xl border border-gray-200 dark:border-gray-700 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-gray-800 dark:text-gray-200 flex items-center gap-1.5">
+                      <Sun className="w-4 h-4 text-amber-500" />
+                      Golden Hour / Sunset Radiance
+                    </span>
+                    <input
+                      type="checkbox"
+                      checked={lightFx.goldenHourEnabled}
+                      onChange={(e) => {
+                        setLightFx({ ...lightFx, goldenHourEnabled: e.target.checked });
+                        setTimeout(saveHistoryStep, 100);
+                      }}
+                      className="w-4 h-4 accent-indigo-600 rounded cursor-pointer"
+                    />
+                  </div>
+                  {lightFx.goldenHourEnabled && (
+                    <div className="space-y-2 pt-1 border-t border-gray-100 dark:border-gray-800">
                       <div className="flex justify-between text-xs text-gray-600 dark:text-gray-400">
-                        <span>Glow Radius:</span>
-                        <span>{lightFx.neonRadius}px</span>
+                        <span>Sunset Warmth:</span>
+                        <span>{lightFx.goldenHourWarmth}%</span>
                       </div>
                       <input
                         type="range"
-                        min="5"
-                        max="60"
-                        value={lightFx.neonRadius}
-                        onChange={(e) => setLightFx({ ...lightFx, neonRadius: Number(e.target.value) })}
+                        min="10"
+                        max="100"
+                        value={lightFx.goldenHourWarmth}
+                        onChange={(e) => setLightFx({ ...lightFx, goldenHourWarmth: Number(e.target.value) })}
                         onMouseUp={() => saveHistoryStep()}
-                        className="w-full accent-rose-500"
+                        className="w-full accent-amber-500"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* 4. Cinematic Floating Dust Particles */}
+                <div className="p-3.5 rounded-2xl border border-gray-200 dark:border-gray-700 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-gray-800 dark:text-gray-200 flex items-center gap-1.5">
+                      <Sparkles className="w-4 h-4 text-yellow-400" />
+                      Floating Light Dust & Motes
+                    </span>
+                    <input
+                      type="checkbox"
+                      checked={lightFx.particlesEnabled}
+                      onChange={(e) => {
+                        setLightFx({ ...lightFx, particlesEnabled: e.target.checked });
+                        setTimeout(saveHistoryStep, 100);
+                      }}
+                      className="w-4 h-4 accent-indigo-600 rounded cursor-pointer"
+                    />
+                  </div>
+                  {lightFx.particlesEnabled && (
+                    <div className="space-y-2 pt-1 border-t border-gray-100 dark:border-gray-800">
+                      <div className="flex justify-between text-xs text-gray-600 dark:text-gray-400">
+                        <span>Particle Density:</span>
+                        <span>{lightFx.particlesCount} motes</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="10"
+                        max="80"
+                        value={lightFx.particlesCount}
+                        onChange={(e) => setLightFx({ ...lightFx, particlesCount: Number(e.target.value) })}
+                        onMouseUp={() => saveHistoryStep()}
+                        className="w-full accent-yellow-400"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* 5. Atmospheric Mist / Fog */}
+                <div className="p-3.5 rounded-2xl border border-gray-200 dark:border-gray-700 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-gray-800 dark:text-gray-200 flex items-center gap-1.5">
+                      <Circle className="w-4 h-4 text-cyan-400" />
+                      Ethereal Mist & Atmospheric Fog
+                    </span>
+                    <input
+                      type="checkbox"
+                      checked={lightFx.mistEnabled}
+                      onChange={(e) => {
+                        setLightFx({ ...lightFx, mistEnabled: e.target.checked });
+                        setTimeout(saveHistoryStep, 100);
+                      }}
+                      className="w-4 h-4 accent-indigo-600 rounded cursor-pointer"
+                    />
+                  </div>
+                  {lightFx.mistEnabled && (
+                    <div className="space-y-2 pt-1 border-t border-gray-100 dark:border-gray-800">
+                      <div className="flex justify-between text-xs text-gray-600 dark:text-gray-400">
+                        <span>Mist Density:</span>
+                        <span>{lightFx.mistIntensity}%</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="10"
+                        max="100"
+                        value={lightFx.mistIntensity}
+                        onChange={(e) => setLightFx({ ...lightFx, mistIntensity: Number(e.target.value) })}
+                        onMouseUp={() => saveHistoryStep()}
+                        className="w-full accent-cyan-400"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* 6. Dramatic Spotlight */}
+                <div className="p-3.5 rounded-2xl border border-gray-200 dark:border-gray-700 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-gray-800 dark:text-gray-200 flex items-center gap-1.5">
+                      <Focus className="w-4 h-4 text-indigo-500" />
+                      Dramatic Spotlight Focus
+                    </span>
+                    <input
+                      type="checkbox"
+                      checked={lightFx.spotlightEnabled}
+                      onChange={(e) => {
+                        setLightFx({ ...lightFx, spotlightEnabled: e.target.checked });
+                        setTimeout(saveHistoryStep, 100);
+                      }}
+                      className="w-4 h-4 accent-indigo-600 rounded cursor-pointer"
+                    />
+                  </div>
+                  {lightFx.spotlightEnabled && (
+                    <div className="space-y-2 pt-1 border-t border-gray-100 dark:border-gray-800">
+                      <div className="flex justify-between text-xs text-gray-600 dark:text-gray-400">
+                        <span>Spotlight Focus:</span>
+                        <span>{lightFx.spotlightIntensity}%</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="10"
+                        max="90"
+                        value={lightFx.spotlightIntensity}
+                        onChange={(e) => setLightFx({ ...lightFx, spotlightIntensity: Number(e.target.value) })}
+                        onMouseUp={() => saveHistoryStep()}
+                        className="w-full accent-indigo-500"
                       />
                     </div>
                   )}
