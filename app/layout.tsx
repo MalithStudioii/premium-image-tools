@@ -64,8 +64,8 @@ export default function RootLayout({
           <GlobalDropzone>
             <MonetagAds />
             <Navbar />
-            <div className="flex-1 pb-16 md:pb-0">{children}</div>
-            <footer className="py-8 border-t border-gray-200/60 dark:border-gray-800/80 bg-white/80 dark:bg-gray-950/80 backdrop-blur-xs text-xs text-gray-500 dark:text-gray-400">
+            <div className="flex-1 pb-8 md:pb-0">{children}</div>
+            <footer className="pt-8 pb-28 md:py-8 border-t border-gray-200/60 dark:border-gray-800/80 bg-white/80 dark:bg-gray-950/80 backdrop-blur-xs text-xs text-gray-500 dark:text-gray-400">
               <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-4">
                 <div className="flex flex-col sm:flex-row items-center gap-2">
                   <p className="flex items-center gap-1 font-medium text-gray-700 dark:text-gray-300">

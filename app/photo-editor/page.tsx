@@ -2,9 +2,9 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { 
-  Upload, Download, Wand2, Sun, Sparkles, 
-  Layers, Sliders, Eraser, Paintbrush, 
+import {
+  Upload, Download, Wand2, Sun, Sparkles,
+  Layers, Sliders, Eraser, Paintbrush,
   SunMedium, Focus, Move, Circle, Flame,
   ShieldCheck, RotateCcw, Undo, Redo, RefreshCw,
   Scissors, Zap, Bot, Copy, Check, MessageSquare,
@@ -81,8 +81,16 @@ interface LightFxState {
 interface HistoryStep {
   maskDataUrl: string;
   selectedTemplateId: string;
-  bgMode: 'transparent' | 'solid' | 'gradient' | 'blur';
+  bgMode: 'transparent' | 'solid' | 'gradient' | 'blur' | 'image';
   bgColor: string;
+  customBgImageSrc?: string | null;
+  bgImageSettings?: {
+    scale: number;
+    offsetX: number;
+    offsetY: number;
+    blur: number;
+    brightness: number;
+  };
   lightFx: LightFxState;
   flare: {
     enabled: boolean;
@@ -125,10 +133,34 @@ export default function PhotoEditorPage() {
 
   // Settings: Preset & Canvas BG
   const [selectedTemplate, setSelectedTemplate] = useState<PresetTemplate>(TEMPLATE_PRESETS[0]);
-  const [bgMode, setBgMode] = useState<'transparent' | 'solid' | 'gradient' | 'blur'>('transparent');
+  const [bgMode, setBgMode] = useState<'transparent' | 'solid' | 'gradient' | 'blur' | 'image'>('transparent');
   const [bgColor, setBgColor] = useState<string>('#ffffff');
   const [bgGradient, setBgGradient] = useState<string>('linear-gradient(135deg, #667eea 0%, #764ba2 100%)');
   const [presetCategory, setPresetCategory] = useState<string>('All');
+
+  // Custom Background Image state
+  const [customBgImageSrc, setCustomBgImageSrc] = useState<string | null>(null);
+  const customBgImageRef = useRef<HTMLImageElement | null>(null);
+  const [bgImageSettings, setBgImageSettings] = useState<{
+    scale: number;
+    offsetX: number;
+    offsetY: number;
+    blur: number;
+    brightness: number;
+  }>({
+    scale: 100,
+    offsetX: 0,
+    offsetY: 0,
+    blur: 0,
+    brightness: 0,
+  });
+  const [isDraggingBgImage, setIsDraggingBgImage] = useState<boolean>(false);
+  const dragBgStartRef = useRef<{ clientX: number; clientY: number; startOffsetX: number; startOffsetY: number }>({
+    clientX: 0,
+    clientY: 0,
+    startOffsetX: 0,
+    startOffsetY: 0,
+  });
 
   // Eraser Tool state
   const [eraserTool, setEraserTool] = useState<'none' | 'wand' | 'erase' | 'restore'>('erase');
@@ -264,6 +296,31 @@ export default function PhotoEditorPage() {
       ctx.filter = 'blur(30px) brightness(0.8)';
       ctx.drawImage(img, -20, -20, targetW + 40, targetH + 40);
       ctx.restore();
+    } else if (bgMode === 'image' && customBgImageRef.current) {
+      const bgImg = customBgImageRef.current;
+      ctx.save();
+
+      let filterStr = '';
+      if (bgImageSettings.blur > 0) {
+        filterStr += `blur(${bgImageSettings.blur}px) `;
+      }
+      if (bgImageSettings.brightness !== 0) {
+        filterStr += `brightness(${100 + bgImageSettings.brightness}%) `;
+      }
+      if (filterStr) {
+        ctx.filter = filterStr.trim();
+      }
+
+      const bgScale = bgImageSettings.scale / 100;
+      const baseScale = Math.max(targetW / bgImg.width, targetH / bgImg.height);
+      const bgW = bgImg.width * baseScale * bgScale;
+      const bgH = bgImg.height * baseScale * bgScale;
+
+      const drawX = (targetW - bgW) / 2 + (bgImageSettings.offsetX / 100) * targetW;
+      const drawY = (targetH - bgH) / 2 + (bgImageSettings.offsetY / 100) * targetH;
+
+      ctx.drawImage(bgImg, drawX, drawY, bgW, bgH);
+      ctx.restore();
     }
 
     // 2. PREPARE SUBJECT CANVAS WITH MASK & ADJUSTMENTS
@@ -274,7 +331,7 @@ export default function PhotoEditorPage() {
 
     if (sCtx) {
       let filterStr = `brightness(${100 + adjustments.brightness}%) contrast(${100 + adjustments.contrast}%) saturate(${100 + adjustments.saturation}%)`;
-      
+
       if (blurMode === 'gaussian' && blurSettings.gaussian > 0) {
         filterStr += ` blur(${blurSettings.gaussian}px)`;
       }
@@ -374,7 +431,7 @@ export default function PhotoEditorPage() {
     }
 
     // 5. LIGHT & ATMOSPHERE EFFECTS OVERLAY
-    
+
     // 5.1 CYBER NEON AURA GLOW
     if (lightFx.neonEnabled) {
       ctx.save();
@@ -403,7 +460,7 @@ export default function PhotoEditorPage() {
       ctx.shadowColor = neonColor;
       ctx.shadowBlur = glowRadius * 1.5;
       ctx.lineWidth = Math.max(2, Math.min(6, glowRadius / 12));
-      
+
       const r = 16;
       const bx = pad;
       const by = pad;
@@ -682,7 +739,8 @@ export default function PhotoEditorPage() {
     }
 
   }, [
-    origDimensions, selectedTemplate, bgMode, bgColor, bgGradient, 
+    origDimensions, selectedTemplate, bgMode, bgColor, bgGradient,
+    customBgImageSrc, bgImageSettings,
     lightFx, flare, blurMode, blurSettings, adjustments
   ]);
 
@@ -703,6 +761,8 @@ export default function PhotoEditorPage() {
       selectedTemplateId: selectedTemplate.id,
       bgMode,
       bgColor,
+      customBgImageSrc,
+      bgImageSettings: { ...bgImageSettings },
       lightFx: { ...lightFx },
       flare: { ...flare },
       blurMode,
@@ -717,7 +777,7 @@ export default function PhotoEditorPage() {
       return updated;
     });
     setHistoryIndex((prevIndex) => Math.min(prevIndex + 1, 24));
-  }, [selectedTemplate.id, bgMode, bgColor, lightFx, flare, blurMode, blurSettings, adjustments, historyIndex]);
+  }, [selectedTemplate.id, bgMode, bgColor, customBgImageSrc, bgImageSettings, lightFx, flare, blurMode, blurSettings, adjustments, historyIndex]);
 
   // Restore history snapshot
   const restoreHistoryStep = useCallback((step: HistoryStep) => {
@@ -739,6 +799,12 @@ export default function PhotoEditorPage() {
     setSelectedTemplate(t);
     setBgMode(step.bgMode);
     setBgColor(step.bgColor);
+    if (step.customBgImageSrc) {
+      setCustomBgImageSrc(step.customBgImageSrc);
+    }
+    if (step.bgImageSettings) {
+      setBgImageSettings(step.bgImageSettings);
+    }
     setLightFx(step.lightFx);
     setFlare(step.flare);
     setBlurMode(step.blurMode);
@@ -1026,10 +1092,10 @@ export default function PhotoEditorPage() {
             if (!visited[nIdx]) {
               const ndi = nIdx * 4;
               const nr = data[ndi], ng = data[ndi + 1], nb = data[ndi + 2];
-              
+
               // Step distance to immediate neighbor
               const stepDist = Math.sqrt((cr - nr) ** 2 + (cg - ng) ** 2 + (cb - nb) ** 2);
-              
+
               // Distance to closest corner seed color
               const seedDist = Math.min(...seedColors.map((sc) => Math.sqrt((sc.r - nr) ** 2 + (sc.g - ng) ** 2 + (sc.b - nb) ** 2)));
 
@@ -1212,7 +1278,19 @@ export default function PhotoEditorPage() {
     if (!coords || !canvasRef.current) return;
     const canvas = canvasRef.current;
 
-    // 1. Draggable Light FX
+    // 1. Draggable Custom Background Image
+    if (activeTab === 'templates' && bgMode === 'image' && customBgImageRef.current) {
+      setIsDraggingBgImage(true);
+      dragBgStartRef.current = {
+        clientX,
+        clientY,
+        startOffsetX: bgImageSettings.offsetX,
+        startOffsetY: bgImageSettings.offsetY,
+      };
+      return;
+    }
+
+    // 2. Draggable Light FX
     if (activeTab === 'lightfx') {
       setIsDraggingLight(true);
       setLightFx((prev) => ({
@@ -1225,7 +1303,7 @@ export default function PhotoEditorPage() {
       return;
     }
 
-    // 2. Draggable Lens Flare
+    // 3. Draggable Lens Flare
     if (flare.enabled && activeTab === 'flare') {
       setIsDraggingFlare(true);
       setFlare((prev) => ({
@@ -1238,27 +1316,29 @@ export default function PhotoEditorPage() {
       return;
     }
 
-    // 3. Cutout Brush / Wand
-    let imgX = coords.x;
-    let imgY = coords.y;
+    // 4. Cutout Brush / Wand
+    if (activeTab === 'eraser') {
+      let imgX = coords.x;
+      let imgY = coords.y;
 
-    if (selectedTemplate.id !== 'original') {
-      const scale = Math.min(canvas.width / origDimensions.width, canvas.height / origDimensions.height);
-      const drawW = origDimensions.width * scale;
-      const drawH = origDimensions.height * scale;
-      const drawX = (canvas.width - drawW) / 2;
-      const drawY = (canvas.height - drawH) / 2;
+      if (selectedTemplate.id !== 'original') {
+        const scale = Math.min(canvas.width / origDimensions.width, canvas.height / origDimensions.height);
+        const drawW = origDimensions.width * scale;
+        const drawH = origDimensions.height * scale;
+        const drawX = (canvas.width - drawW) / 2;
+        const drawY = (canvas.height - drawH) / 2;
 
-      imgX = (coords.x - drawX) / scale;
-      imgY = (coords.y - drawY) / scale;
-    }
+        imgX = (coords.x - drawX) / scale;
+        imgY = (coords.y - drawY) / scale;
+      }
 
-    if (imgX >= 0 && imgX <= origDimensions.width && imgY >= 0 && imgY <= origDimensions.height) {
-      if (eraserTool === 'wand') {
-        applyMagicWand(imgX, imgY);
-      } else if (eraserTool === 'erase' || eraserTool === 'restore') {
-        setIsDrawing(true);
-        drawBrushOnMask(imgX, imgY);
+      if (imgX >= 0 && imgX <= origDimensions.width && imgY >= 0 && imgY <= origDimensions.height) {
+        if (eraserTool === 'wand') {
+          applyMagicWand(imgX, imgY);
+        } else if (eraserTool === 'erase' || eraserTool === 'restore') {
+          setIsDrawing(true);
+          drawBrushOnMask(imgX, imgY);
+        }
       }
     }
   };
@@ -1267,6 +1347,21 @@ export default function PhotoEditorPage() {
     const coords = getCanvasCoords(clientX, clientY);
     if (!coords || !canvasRef.current) return;
     const canvas = canvasRef.current;
+
+    if (isDraggingBgImage) {
+      const rect = canvas.getBoundingClientRect();
+      const deltaX = clientX - dragBgStartRef.current.clientX;
+      const deltaY = clientY - dragBgStartRef.current.clientY;
+      const percentDeltaX = (deltaX / rect.width) * 100;
+      const percentDeltaY = (deltaY / rect.height) * 100;
+
+      setBgImageSettings((prev) => ({
+        ...prev,
+        offsetX: Math.max(-100, Math.min(100, Math.round(dragBgStartRef.current.startOffsetX + percentDeltaX))),
+        offsetY: Math.max(-100, Math.min(100, Math.round(dragBgStartRef.current.startOffsetY + percentDeltaY))),
+      }));
+      return;
+    }
 
     if (isDraggingLight) {
       setLightFx((prev) => ({
@@ -1307,6 +1402,10 @@ export default function PhotoEditorPage() {
   };
 
   const handlePointerUp = () => {
+    if (isDraggingBgImage) {
+      setIsDraggingBgImage(false);
+      saveHistoryStep();
+    }
     if (isDrawing) {
       setIsDrawing(false);
       saveHistoryStep();
@@ -1384,7 +1483,7 @@ export default function PhotoEditorPage() {
 
   return (
     <main className="max-w-7xl mx-auto px-4 py-8 flex flex-col items-center">
-      
+
       {/* Header Badge */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
@@ -1414,11 +1513,10 @@ export default function PhotoEditorPage() {
         >
           <div
             {...getRootProps()}
-            className={`border-3 border-dashed rounded-3xl p-12 sm:p-16 text-center cursor-pointer transition-all duration-300 flex flex-col items-center justify-center bg-white shadow-xl ${
-              isDragActive
+            className={`border-3 border-dashed rounded-3xl p-12 sm:p-16 text-center cursor-pointer transition-all duration-300 flex flex-col items-center justify-center bg-white shadow-xl ${isDragActive
                 ? 'border-indigo-600 bg-indigo-50/50 scale-[1.01]'
                 : 'border-gray-300 hover:border-indigo-400 hover:bg-gray-50/80'
-            }`}
+              }`}
           >
             <input {...getInputProps()} />
             <div className="w-20 h-20 rounded-3xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-6 shadow-md shadow-indigo-500/10">
@@ -1437,10 +1535,10 @@ export default function PhotoEditorPage() {
         </motion.div>
       ) : (
         <div className="w-full flex flex-col lg:grid lg:grid-cols-12 gap-6 sm:gap-8 items-start">
-          
+
           {/* CANVAS PREVIEW STUDIO (TOP ON MOBILE, RIGHT ON DESKTOP) */}
           <div className="order-1 lg:order-2 lg:col-span-7 flex flex-col items-center w-full">
-            
+
             {/* Top Preview Action Bar: Auto BG Remove, Undo, Redo, Focus Mode, Reset (Normal scroll flow) */}
             <div className="w-full bg-white dark:bg-gray-900 px-3 sm:px-4 py-2 sm:py-2.5 rounded-2xl border border-gray-200/80 dark:border-gray-800 shadow-md mb-2 flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-1.5 sm:gap-2">
@@ -1478,11 +1576,10 @@ export default function PhotoEditorPage() {
                 {/* Focus / Fullscreen Mode Toggle */}
                 <button
                   onClick={() => setIsFocusMode(!isFocusMode)}
-                  className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                    isFocusMode 
-                      ? 'bg-indigo-600 text-white shadow-xs' 
+                  className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${isFocusMode
+                      ? 'bg-indigo-600 text-white shadow-xs'
                       : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200'
-                  }`}
+                    }`}
                   title={isFocusMode ? "Show Tools" : "Expand Fullscreen Canvas"}
                 >
                   {isFocusMode ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
@@ -1518,8 +1615,8 @@ export default function PhotoEditorPage() {
             {/* ONLY Canvas Container is Sticky on Mobile & Desktop */}
             <div className={`sticky top-14 lg:top-6 z-30 w-full bg-gray-50/80 dark:bg-gray-950/80 backdrop-blur-md pb-2 transition-all duration-300 ${isFocusMode ? 'h-[78vh]' : ''}`}>
               <div className={`relative w-full bg-gray-950/95 backdrop-blur-xl p-2.5 sm:p-6 rounded-3xl border border-gray-800 shadow-2xl flex items-center justify-center overflow-hidden transition-all duration-300 ${isFocusMode ? 'h-full min-h-[70vh]' : 'h-[28vh] sm:h-[38vh] min-h-[170px] max-h-[220px] sm:max-h-[360px] lg:min-h-[460px] lg:max-h-[600px]'}`}>
-                
-                <div 
+
+                <div
                   className="relative rounded-2xl overflow-hidden shadow-2xl max-w-full max-h-full border border-gray-700/80 flex items-center justify-center"
                   style={{
                     backgroundImage: bgMode === 'transparent' ? 'radial-gradient(#4b5563 1px, transparent 1px)' : 'none',
@@ -1553,7 +1650,7 @@ export default function PhotoEditorPage() {
 
           {/* LEFT/BOTTOM SIDEBAR (TOOLS DRAWER) */}
           <div className={`order-2 lg:order-1 lg:col-span-5 bg-white dark:bg-gray-900 p-4 sm:p-5 rounded-3xl border border-gray-200/80 dark:border-gray-800 shadow-xl space-y-6 w-full ${isFocusMode ? 'hidden lg:block' : 'block'}`}>
-            
+
             {/* Tool Tabs Navigation */}
             <div className="flex overflow-x-auto no-scrollbar sm:grid sm:grid-cols-7 gap-1 p-1 bg-gray-100/80 dark:bg-gray-800/80 rounded-2xl">
               {[
@@ -1571,11 +1668,10 @@ export default function PhotoEditorPage() {
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id as 'templates' | 'eraser' | 'lightfx' | 'flare' | 'blur' | 'adjustments' | 'ai')}
-                    className={`flex flex-col items-center justify-center py-2 px-3 sm:px-0.5 rounded-xl text-[10px] font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 sm:shrink ${
-                      isActive
+                    className={`flex flex-col items-center justify-center py-2 px-3 sm:px-0.5 rounded-xl text-[10px] font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 sm:shrink ${isActive
                         ? 'bg-white dark:bg-gray-900 text-indigo-600 dark:text-indigo-400 shadow-md shadow-gray-200/50 dark:shadow-none'
                         : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200/60 dark:hover:bg-gray-700/60'
-                    }`}
+                      }`}
                   >
                     <Icon className="w-3.5 h-3.5 mb-1" />
                     <span>{tab.label}</span>
@@ -1603,11 +1699,10 @@ export default function PhotoEditorPage() {
                       <button
                         key={cat}
                         onClick={() => setPresetCategory(cat)}
-                        className={`px-2.5 py-1 rounded-xl text-[11px] font-bold shrink-0 transition-all cursor-pointer border ${
-                          presetCategory === cat
+                        className={`px-2.5 py-1 rounded-xl text-[11px] font-bold shrink-0 transition-all cursor-pointer border ${presetCategory === cat
                             ? 'bg-indigo-600 border-indigo-600 text-white shadow-xs'
                             : 'bg-gray-100 dark:bg-gray-800 border-transparent hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300'
-                        }`}
+                          }`}
                       >
                         {cat}
                       </button>
@@ -1625,11 +1720,10 @@ export default function PhotoEditorPage() {
                             setSelectedTemplate(preset);
                             setTimeout(saveHistoryStep, 50);
                           }}
-                          className={`p-2.5 rounded-2xl border-2 text-left transition-all cursor-pointer ${
-                            isSelected
+                          className={`p-2.5 rounded-2xl border-2 text-left transition-all cursor-pointer ${isSelected
                               ? 'border-indigo-600 dark:border-indigo-500 bg-indigo-50/80 dark:bg-indigo-950/80 text-indigo-950 dark:text-indigo-200 ring-2 ring-indigo-500/20 font-bold shadow-xs'
                               : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/60 hover:border-indigo-300 dark:hover:border-indigo-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-900 dark:text-gray-100 font-medium'
-                          }`}
+                            }`}
                         >
                           <div className="flex items-center justify-between text-xs mb-1">
                             <span className="font-bold truncate">{preset.name}</span>
@@ -1651,17 +1745,18 @@ export default function PhotoEditorPage() {
                   <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500">
                     Canvas Backdrop Fill
                   </h3>
-                  <div className="grid grid-cols-4 gap-2">
+                  <div className="grid grid-cols-3 sm:grid-cols-5 gap-1.5">
                     {[
                       { id: 'transparent', label: 'Transparent' },
                       { id: 'solid', label: 'Solid Color' },
                       { id: 'gradient', label: 'Gradient' },
                       { id: 'blur', label: 'Blur Photo' },
+                      { id: 'image', label: 'Custom Image' },
                     ].map((mode) => (
                       <button
                         key={mode.id}
                         onClick={() => {
-                          setBgMode(mode.id as 'transparent' | 'solid' | 'gradient' | 'blur');
+                          setBgMode(mode.id as 'transparent' | 'solid' | 'gradient' | 'blur' | 'image');
                           setTimeout(saveHistoryStep, 50);
                         }}
                         className={`py-2 px-1.5 rounded-xl text-xs font-bold border text-center transition-all cursor-pointer ${
@@ -1737,6 +1832,148 @@ export default function PhotoEditorPage() {
                       </div>
                     </div>
                   )}
+
+                  {/* Custom Background Image Options */}
+                  {bgMode === 'image' && (
+                    <div className="p-3.5 rounded-2xl border border-gray-200 dark:border-gray-700 space-y-3 bg-gray-50/50 dark:bg-gray-800/40">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-gray-800 dark:text-gray-200">
+                          Custom Backdrop Image:
+                        </span>
+                        {customBgImageSrc && (
+                          <button
+                            onClick={() => {
+                              setBgImageSettings({ scale: 100, offsetX: 0, offsetY: 0, blur: 0, brightness: 0 });
+                              setTimeout(saveHistoryStep, 50);
+                            }}
+                            className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 cursor-pointer"
+                          >
+                            <RotateCcw className="w-3 h-3" />
+                            <span>Reset Align</span>
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Image Upload Input */}
+                      <label className="flex items-center justify-center gap-2 w-full py-3 px-4 rounded-xl border-2 border-dashed border-indigo-300 dark:border-indigo-700 hover:border-indigo-500 bg-white dark:bg-gray-800 text-indigo-600 dark:text-indigo-400 font-bold text-xs cursor-pointer transition-all shadow-xs">
+                        <Upload className="w-4 h-4" />
+                        <span>{customBgImageSrc ? 'Change Backdrop Image' : 'Upload Backdrop Image'}</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              const url = URL.createObjectURL(file);
+                              const img = new Image();
+                              img.crossOrigin = 'anonymous';
+                              img.onload = () => {
+                                customBgImageRef.current = img;
+                                setCustomBgImageSrc(url);
+                                setBgMode('image');
+                                setTimeout(saveHistoryStep, 100);
+                              };
+                              img.src = url;
+                            }
+                          }}
+                        />
+                      </label>
+
+                      {customBgImageSrc && (
+                        <div className="space-y-3 pt-1">
+                          <div className="p-2 rounded-xl bg-indigo-50/80 dark:bg-indigo-950/50 border border-indigo-100 dark:border-indigo-900/50 text-[11px] text-indigo-900 dark:text-indigo-300 font-medium">
+                            💡 Touch &amp; drag directly on the canvas preview to reposition this background image in real-time.
+                          </div>
+
+                          {/* Zoom / Scale Slider */}
+                          <div className="space-y-1">
+                            <div className="flex justify-between text-xs font-bold text-gray-700 dark:text-gray-300">
+                              <span>Zoom / Scale:</span>
+                              <span>{bgImageSettings.scale}%</span>
+                            </div>
+                            <input
+                              type="range"
+                              min="50"
+                              max="250"
+                              value={bgImageSettings.scale}
+                              onChange={(e) => setBgImageSettings({ ...bgImageSettings, scale: Number(e.target.value) })}
+                              onMouseUp={() => saveHistoryStep()}
+                              className="w-full accent-indigo-600 cursor-pointer"
+                            />
+                          </div>
+
+                          {/* Horizontal Position (X) */}
+                          <div className="space-y-1">
+                            <div className="flex justify-between text-xs font-bold text-gray-700 dark:text-gray-300">
+                              <span>Position X (Horizontal):</span>
+                              <span>{bgImageSettings.offsetX > 0 ? `+${bgImageSettings.offsetX}` : bgImageSettings.offsetX}%</span>
+                            </div>
+                            <input
+                              type="range"
+                              min="-100"
+                              max="100"
+                              value={bgImageSettings.offsetX}
+                              onChange={(e) => setBgImageSettings({ ...bgImageSettings, offsetX: Number(e.target.value) })}
+                              onMouseUp={() => saveHistoryStep()}
+                              className="w-full accent-indigo-600 cursor-pointer"
+                            />
+                          </div>
+
+                          {/* Vertical Position (Y) */}
+                          <div className="space-y-1">
+                            <div className="flex justify-between text-xs font-bold text-gray-700 dark:text-gray-300">
+                              <span>Position Y (Vertical):</span>
+                              <span>{bgImageSettings.offsetY > 0 ? `+${bgImageSettings.offsetY}` : bgImageSettings.offsetY}%</span>
+                            </div>
+                            <input
+                              type="range"
+                              min="-100"
+                              max="100"
+                              value={bgImageSettings.offsetY}
+                              onChange={(e) => setBgImageSettings({ ...bgImageSettings, offsetY: Number(e.target.value) })}
+                              onMouseUp={() => saveHistoryStep()}
+                              className="w-full accent-indigo-600 cursor-pointer"
+                            />
+                          </div>
+
+                          {/* Backdrop Blur Slider */}
+                          <div className="space-y-1">
+                            <div className="flex justify-between text-xs font-bold text-gray-700 dark:text-gray-300">
+                              <span>Backdrop Bokeh Blur:</span>
+                              <span>{bgImageSettings.blur}px</span>
+                            </div>
+                            <input
+                              type="range"
+                              min="0"
+                              max="40"
+                              value={bgImageSettings.blur}
+                              onChange={(e) => setBgImageSettings({ ...bgImageSettings, blur: Number(e.target.value) })}
+                              onMouseUp={() => saveHistoryStep()}
+                              className="w-full accent-indigo-600 cursor-pointer"
+                            />
+                          </div>
+
+                          {/* Backdrop Brightness Slider */}
+                          <div className="space-y-1">
+                            <div className="flex justify-between text-xs font-bold text-gray-700 dark:text-gray-300">
+                              <span>Backdrop Brightness / Darken:</span>
+                              <span>{bgImageSettings.brightness > 0 ? `+${bgImageSettings.brightness}` : bgImageSettings.brightness}%</span>
+                            </div>
+                            <input
+                              type="range"
+                              min="-60"
+                              max="60"
+                              value={bgImageSettings.brightness}
+                              onChange={(e) => setBgImageSettings({ ...bgImageSettings, brightness: Number(e.target.value) })}
+                              onMouseUp={() => saveHistoryStep()}
+                              className="w-full accent-indigo-600 cursor-pointer"
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </motion.div>
             )}
@@ -1744,7 +1981,7 @@ export default function PhotoEditorPage() {
             {/* TAB 2: ERASER & AUTO BACKGROUND REMOVER */}
             {activeTab === 'eraser' && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-5">
-                
+
                 {/* 1-CLICK AUTO REMOVE BACKGROUND BUTTON (POWERED BY AI & BFS) */}
                 <div className="p-4 rounded-2xl bg-gradient-to-r from-violet-600 via-indigo-600 to-blue-600 text-white shadow-lg shadow-indigo-500/20 space-y-3">
                   <div className="flex items-center justify-between">
@@ -1795,11 +2032,10 @@ export default function PhotoEditorPage() {
                   <div className="grid grid-cols-3 gap-2">
                     <button
                       onClick={() => setEraserTool(eraserTool === 'wand' ? 'none' : 'wand')}
-                      className={`p-3 rounded-2xl border-2 flex flex-col items-center gap-1.5 transition-all cursor-pointer ${
-                        eraserTool === 'wand'
+                      className={`p-3 rounded-2xl border-2 flex flex-col items-center gap-1.5 transition-all cursor-pointer ${eraserTool === 'wand'
                           ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 font-extrabold shadow-md shadow-indigo-500/10'
                           : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/60 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-200 font-semibold'
-                      }`}
+                        }`}
                     >
                       <Wand2 className={`w-5 h-5 ${eraserTool === 'wand' ? 'text-indigo-600 dark:text-indigo-400 animate-pulse' : 'text-indigo-500'}`} />
                       <span className="text-xs">Magic Wand</span>
@@ -1807,11 +2043,10 @@ export default function PhotoEditorPage() {
 
                     <button
                       onClick={() => setEraserTool(eraserTool === 'erase' ? 'none' : 'erase')}
-                      className={`p-3 rounded-2xl border-2 flex flex-col items-center gap-1.5 transition-all cursor-pointer ${
-                        eraserTool === 'erase'
+                      className={`p-3 rounded-2xl border-2 flex flex-col items-center gap-1.5 transition-all cursor-pointer ${eraserTool === 'erase'
                           ? 'border-rose-600 bg-rose-50 dark:bg-rose-950/80 text-rose-700 dark:text-rose-300 font-extrabold shadow-md shadow-rose-500/10'
                           : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/60 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-200 font-semibold'
-                      }`}
+                        }`}
                     >
                       <Eraser className={`w-5 h-5 ${eraserTool === 'erase' ? 'text-rose-600 dark:text-rose-400' : 'text-rose-500'}`} />
                       <span className="text-xs">Erase Brush</span>
@@ -1819,11 +2054,10 @@ export default function PhotoEditorPage() {
 
                     <button
                       onClick={() => setEraserTool(eraserTool === 'restore' ? 'none' : 'restore')}
-                      className={`p-3 rounded-2xl border-2 flex flex-col items-center gap-1.5 transition-all cursor-pointer ${
-                        eraserTool === 'restore'
+                      className={`p-3 rounded-2xl border-2 flex flex-col items-center gap-1.5 transition-all cursor-pointer ${eraserTool === 'restore'
                           ? 'border-emerald-600 bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 font-extrabold shadow-md shadow-emerald-500/10'
                           : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/60 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-200 font-semibold'
-                      }`}
+                        }`}
                     >
                       <Paintbrush className={`w-5 h-5 ${eraserTool === 'restore' ? 'text-emerald-600 dark:text-emerald-400' : 'text-emerald-500'}`} />
                       <span className="text-xs">Restore</span>
@@ -2062,9 +2296,8 @@ export default function PhotoEditorPage() {
                               <button
                                 key={hex}
                                 onClick={() => setLightFx({ ...lightFx, neonColor: hex })}
-                                className={`w-6 h-6 rounded-full border-2 transition-transform cursor-pointer ${
-                                  lightFx.neonColor.toLowerCase() === hex.toLowerCase() ? 'scale-110 border-white shadow-md' : 'border-transparent'
-                                }`}
+                                className={`w-6 h-6 rounded-full border-2 transition-transform cursor-pointer ${lightFx.neonColor.toLowerCase() === hex.toLowerCase() ? 'scale-110 border-white shadow-md' : 'border-transparent'
+                                  }`}
                                 style={{ backgroundColor: hex }}
                               />
                             ))}
@@ -2270,11 +2503,10 @@ export default function PhotoEditorPage() {
                               setFlare({ ...flare, type: t });
                               setTimeout(saveHistoryStep, 50);
                             }}
-                            className={`py-1.5 px-2 rounded-xl text-xs font-bold capitalize transition-all cursor-pointer border ${
-                              flare.type === t
+                            className={`py-1.5 px-2 rounded-xl text-xs font-bold capitalize transition-all cursor-pointer border ${flare.type === t
                                 ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300'
                                 : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400'
-                            }`}
+                              }`}
                           >
                             {t}
                           </button>
@@ -2321,11 +2553,10 @@ export default function PhotoEditorPage() {
                         setBlurMode(mode.id as any);
                         setTimeout(saveHistoryStep, 50);
                       }}
-                      className={`py-2 px-2 rounded-xl text-xs font-bold border text-center transition-all cursor-pointer ${
-                        blurMode === mode.id
+                      className={`py-2 px-2 rounded-xl text-xs font-bold border text-center transition-all cursor-pointer ${blurMode === mode.id
                           ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300'
                           : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400'
-                      }`}
+                        }`}
                     >
                       {mode.label}
                     </button>
@@ -2519,11 +2750,10 @@ export default function PhotoEditorPage() {
                     <button
                       key={fmt}
                       onClick={() => setExportFormat(fmt)}
-                      className={`px-2.5 py-1 rounded-lg text-xs font-bold uppercase cursor-pointer transition-all ${
-                        exportFormat === fmt
+                      className={`px-2.5 py-1 rounded-lg text-xs font-bold uppercase cursor-pointer transition-all ${exportFormat === fmt
                           ? 'bg-indigo-600 text-white shadow-xs'
                           : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200'
-                      }`}
+                        }`}
                     >
                       {fmt}
                     </button>
