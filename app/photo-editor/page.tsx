@@ -130,7 +130,7 @@ export default function PhotoEditorPage() {
   const [bgGradient] = useState<string>('linear-gradient(135deg, #667eea 0%, #764ba2 100%)');
 
   // Eraser Tool state
-  const [eraserTool, setEraserTool] = useState<'none' | 'wand' | 'erase' | 'restore'>('none');
+  const [eraserTool, setEraserTool] = useState<'none' | 'wand' | 'erase' | 'restore'>('erase');
   const [wandTolerance, setWandTolerance] = useState<number>(35);
   const [brushSize, setBrushSize] = useState<number>(25);
   const [isDrawing, setIsDrawing] = useState<boolean>(false);
@@ -1701,49 +1701,65 @@ export default function PhotoEditorPage() {
                 </div>
 
                 <div>
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-3">
-                    Manual Cutout & Refine Tools
-                  </h3>
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500">
+                      Manual Cutout & Refine Tools
+                    </h3>
+                    <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 px-2 py-0.5 rounded-full">
+                      {eraserTool === 'wand' ? '🪄 Magic Wand Active' : eraserTool === 'erase' ? '🧹 Erase Active' : eraserTool === 'restore' ? '🖌️ Restore Active' : 'Select Tool'}
+                    </span>
+                  </div>
+
                   <div className="grid grid-cols-3 gap-2">
                     <button
-                      onClick={() => setEraserTool('wand')}
-                      className={`p-3 rounded-2xl border flex flex-col items-center gap-1.5 transition-all cursor-pointer ${
+                      onClick={() => setEraserTool(eraserTool === 'wand' ? 'none' : 'wand')}
+                      className={`p-3 rounded-2xl border-2 flex flex-col items-center gap-1.5 transition-all cursor-pointer ${
                         eraserTool === 'wand'
-                          ? 'border-indigo-600 bg-indigo-50 text-indigo-700 font-bold'
-                          : 'border-gray-200 hover:bg-gray-50 text-gray-700 font-medium'
+                          ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 font-extrabold shadow-md shadow-indigo-500/10'
+                          : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/60 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-200 font-semibold'
                       }`}
                     >
-                      <Wand2 className="w-5 h-5 text-indigo-600" />
+                      <Wand2 className={`w-5 h-5 ${eraserTool === 'wand' ? 'text-indigo-600 dark:text-indigo-400 animate-pulse' : 'text-indigo-500'}`} />
                       <span className="text-xs">Magic Wand</span>
                     </button>
+
                     <button
-                      onClick={() => setEraserTool('erase')}
-                      className={`p-3 rounded-2xl border flex flex-col items-center gap-1.5 transition-all cursor-pointer ${
+                      onClick={() => setEraserTool(eraserTool === 'erase' ? 'none' : 'erase')}
+                      className={`p-3 rounded-2xl border-2 flex flex-col items-center gap-1.5 transition-all cursor-pointer ${
                         eraserTool === 'erase'
-                          ? 'border-indigo-600 bg-indigo-50 text-indigo-700 font-bold'
-                          : 'border-gray-200 hover:bg-gray-50 text-gray-700 font-medium'
+                          ? 'border-rose-600 bg-rose-50 dark:bg-rose-950/80 text-rose-700 dark:text-rose-300 font-extrabold shadow-md shadow-rose-500/10'
+                          : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/60 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-200 font-semibold'
                       }`}
                     >
-                      <Eraser className="w-5 h-5 text-rose-600" />
+                      <Eraser className={`w-5 h-5 ${eraserTool === 'erase' ? 'text-rose-600 dark:text-rose-400' : 'text-rose-500'}`} />
                       <span className="text-xs">Erase Brush</span>
                     </button>
+
                     <button
-                      onClick={() => setEraserTool('restore')}
-                      className={`p-3 rounded-2xl border flex flex-col items-center gap-1.5 transition-all cursor-pointer ${
+                      onClick={() => setEraserTool(eraserTool === 'restore' ? 'none' : 'restore')}
+                      className={`p-3 rounded-2xl border-2 flex flex-col items-center gap-1.5 transition-all cursor-pointer ${
                         eraserTool === 'restore'
-                          ? 'border-indigo-600 bg-indigo-50 text-indigo-700 font-bold'
-                          : 'border-gray-200 hover:bg-gray-50 text-gray-700 font-medium'
+                          ? 'border-emerald-600 bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 font-extrabold shadow-md shadow-emerald-500/10'
+                          : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/60 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-200 font-semibold'
                       }`}
                     >
-                      <Paintbrush className="w-5 h-5 text-emerald-600" />
+                      <Paintbrush className={`w-5 h-5 ${eraserTool === 'restore' ? 'text-emerald-600 dark:text-emerald-400' : 'text-emerald-500'}`} />
                       <span className="text-xs">Restore</span>
                     </button>
+                  </div>
+
+                  {/* Active Tool Helper Note */}
+                  <div className="mt-2.5 p-2.5 rounded-xl bg-gray-50 dark:bg-gray-800/80 border border-gray-200/80 dark:border-gray-700/80 text-[11px] text-gray-600 dark:text-gray-300">
+                    {eraserTool === 'erase' && '🧹 Touch / Click & drag across any background or unwanted object on the canvas to erase it.'}
+                    {eraserTool === 'restore' && '🖌️ Touch / Click & drag over erased areas to paint back the original photo details.'}
+                    {eraserTool === 'wand' && '🪄 Click on any solid or background color on the canvas to auto-erase all matching colors.'}
+                    {eraserTool === 'none' && '👆 Select Magic Wand, Erase Brush, or Restore to start editing the mask on the canvas.'}
                   </div>
                 </div>
 
                 {eraserTool === 'wand' && (
-                  <div>
-                    <div className="flex justify-between text-xs font-bold text-gray-700 mb-1">
+                  <div className="p-3 rounded-2xl border border-gray-200 dark:border-gray-700 space-y-1.5">
+                    <div className="flex justify-between text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">
                       <span>Wand Color Tolerance:</span>
                       <span>{wandTolerance}%</span>
                     </div>
@@ -1753,34 +1769,34 @@ export default function PhotoEditorPage() {
                       max="90"
                       value={wandTolerance}
                       onChange={(e) => setWandTolerance(Number(e.target.value))}
-                      className="w-full accent-indigo-600"
+                      className="w-full accent-indigo-600 cursor-pointer"
                     />
                   </div>
                 )}
 
                 {(eraserTool === 'erase' || eraserTool === 'restore') && (
-                  <div>
-                    <div className="flex justify-between text-xs font-bold text-gray-700 mb-1">
-                      <span>Brush Radius:</span>
+                  <div className="p-3 rounded-2xl border border-gray-200 dark:border-gray-700 space-y-1.5">
+                    <div className="flex justify-between text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">
+                      <span>Brush Size:</span>
                       <span>{brushSize}px</span>
                     </div>
                     <input
                       type="range"
                       min="5"
-                      max="100"
+                      max="120"
                       value={brushSize}
                       onChange={(e) => setBrushSize(Number(e.target.value))}
-                      className="w-full accent-indigo-600"
+                      className="w-full accent-indigo-600 cursor-pointer"
                     />
                   </div>
                 )}
 
                 <button
                   onClick={resetMask}
-                  className="w-full py-2.5 px-4 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer"
+                  className="w-full py-2.5 px-4 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer border border-gray-200 dark:border-gray-700"
                 >
                   <RotateCcw className="w-4 h-4" />
-                  <span>Reset Cutout Mask</span>
+                  <span>Reset Cutout Mask to Full Photo</span>
                 </button>
               </motion.div>
             )}
