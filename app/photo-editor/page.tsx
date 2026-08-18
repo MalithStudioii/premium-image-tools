@@ -1182,11 +1182,11 @@ export default function PhotoEditorPage() {
       ) : (
         <div className="w-full flex flex-col lg:grid lg:grid-cols-12 gap-6 sm:gap-8 items-start">
           
-          {/* CANVAS PREVIEW STUDIO (TOP ON MOBILE WITH STICKY SPLIT-SCREEN, RIGHT ON DESKTOP) */}
-          <div className={`order-1 lg:order-2 lg:col-span-7 flex flex-col items-center sticky top-14 lg:top-6 self-start z-30 transition-all duration-300 w-full ${isFocusMode ? 'h-[78vh]' : ''}`}>
+          {/* CANVAS PREVIEW STUDIO (TOP ON MOBILE, RIGHT ON DESKTOP) */}
+          <div className="order-1 lg:order-2 lg:col-span-7 flex flex-col items-center w-full">
             
-            {/* Top Preview Action Bar: Auto BG Remove, Undo, Redo, Focus Mode, Reset */}
-            <div className="w-full bg-white dark:bg-gray-900 px-3 sm:px-4 py-2 sm:py-2.5 rounded-2xl border border-gray-200/80 dark:border-gray-800 shadow-md mb-3 flex flex-wrap items-center justify-between gap-2">
+            {/* Top Preview Action Bar: Auto BG Remove, Undo, Redo, Focus Mode, Reset (Normal scroll flow) */}
+            <div className="w-full bg-white dark:bg-gray-900 px-3 sm:px-4 py-2 sm:py-2.5 rounded-2xl border border-gray-200/80 dark:border-gray-800 shadow-md mb-2 flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-1.5 sm:gap-2">
                 <button
                   onClick={autoRemoveBackground}
@@ -1259,29 +1259,31 @@ export default function PhotoEditorPage() {
               </div>
             </div>
 
-            {/* Canvas Container */}
-            <div className={`relative w-full bg-gray-950/95 backdrop-blur-xl p-3 sm:p-6 rounded-3xl border border-gray-800 shadow-2xl flex items-center justify-center overflow-hidden transition-all duration-300 ${isFocusMode ? 'h-full min-h-[70vh]' : 'h-[36vh] sm:h-[44vh] min-h-[220px] max-h-[340px] sm:max-h-[460px] lg:min-h-[460px] lg:max-h-[600px]'}`}>
-              
-              <div 
-                className="relative rounded-2xl overflow-hidden shadow-2xl max-w-full max-h-full border border-gray-700/80 flex items-center justify-center"
-                style={{
-                  backgroundImage: bgMode === 'transparent' ? 'radial-gradient(#4b5563 1px, transparent 1px)' : 'none',
-                  backgroundSize: '16px 16px',
-                  backgroundColor: bgMode === 'transparent' ? '#1f2937' : 'transparent',
-                }}
-              >
-                <canvas
-                  ref={canvasRef}
-                  onMouseDown={handleCanvasMouseDown}
-                  onMouseMove={handleCanvasMouseMove}
-                  onMouseUp={handleCanvasMouseUp}
-                  className="max-w-full max-h-full object-contain cursor-crosshair block"
-                />
-              </div>
+            {/* ONLY Canvas Container is Sticky on Mobile & Desktop */}
+            <div className={`sticky top-14 lg:top-6 z-30 w-full bg-gray-50/80 dark:bg-gray-950/80 backdrop-blur-md pb-2 transition-all duration-300 ${isFocusMode ? 'h-[78vh]' : ''}`}>
+              <div className={`relative w-full bg-gray-950/95 backdrop-blur-xl p-2.5 sm:p-6 rounded-3xl border border-gray-800 shadow-2xl flex items-center justify-center overflow-hidden transition-all duration-300 ${isFocusMode ? 'h-full min-h-[70vh]' : 'h-[28vh] sm:h-[38vh] min-h-[170px] max-h-[220px] sm:max-h-[360px] lg:min-h-[460px] lg:max-h-[600px]'}`}>
+                
+                <div 
+                  className="relative rounded-2xl overflow-hidden shadow-2xl max-w-full max-h-full border border-gray-700/80 flex items-center justify-center"
+                  style={{
+                    backgroundImage: bgMode === 'transparent' ? 'radial-gradient(#4b5563 1px, transparent 1px)' : 'none',
+                    backgroundSize: '16px 16px',
+                    backgroundColor: bgMode === 'transparent' ? '#1f2937' : 'transparent',
+                  }}
+                >
+                  <canvas
+                    ref={canvasRef}
+                    onMouseDown={handleCanvasMouseDown}
+                    onMouseMove={handleCanvasMouseMove}
+                    onMouseUp={handleCanvasMouseUp}
+                    className="max-w-full max-h-full object-contain cursor-crosshair block"
+                  />
+                </div>
 
+              </div>
             </div>
 
-            <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mt-2 font-medium flex items-center gap-1.5">
+            <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mt-1 font-medium flex items-center gap-1.5">
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
               <span>Full HD Client-Side Canvas Rendering</span>
             </p>

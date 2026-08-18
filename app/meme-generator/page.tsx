@@ -1290,71 +1290,75 @@ export default function MemeGeneratorPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 w-full">
         
-        {/* Left Column: Interactive Canvas Studio (Sticky Top on Mobile & Desktop) */}
-        <div className={`lg:col-span-7 flex flex-col items-center sticky top-14 lg:top-6 self-start z-30 transition-all duration-300 w-full ${isFocusMode ? 'h-[78vh]' : ''}`}>
-          <div className={`relative w-full bg-slate-950/95 rounded-3xl p-3 sm:p-4 border border-slate-800 shadow-2xl flex flex-col items-center justify-center overflow-hidden transition-all duration-300 ${isFocusMode ? 'h-full min-h-[70vh]' : 'h-[36vh] sm:h-[44vh] min-h-[220px] max-h-[340px] sm:max-h-[460px] lg:min-h-[460px] lg:max-h-[520px]'}`}>
-            
-            {/* Floating Canvas Top Bar Controls */}
-            <div className="absolute top-2.5 left-2.5 right-2.5 z-20 flex items-center justify-between pointer-events-none">
-              {/* Left: Undo & Redo quick floating pill */}
-              <div className="flex items-center gap-1 bg-slate-900/80 backdrop-blur-md p-1 rounded-xl border border-slate-700/60 shadow-lg pointer-events-auto">
-                <button
-                  onClick={handleUndo}
-                  disabled={!canUndo}
-                  className="p-1.5 rounded-lg text-slate-200 hover:text-white hover:bg-slate-800 disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer"
-                  title="Undo (Ctrl+Z)"
-                >
-                  <Undo2 className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  onClick={handleRedo}
-                  disabled={!canRedo}
-                  className="p-1.5 rounded-lg text-slate-200 hover:text-white hover:bg-slate-800 disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer"
-                  title="Redo (Ctrl+Y)"
-                >
-                  <Redo2 className="w-3.5 h-3.5" />
-                </button>
+        {/* Left Column: Interactive Canvas Studio */}
+        <div className="lg:col-span-7 flex flex-col items-center w-full">
+          
+          {/* ONLY the Canvas Box is Sticky on Mobile & Desktop */}
+          <div className={`sticky top-14 lg:top-6 z-30 w-full bg-gray-50/80 dark:bg-gray-950/80 backdrop-blur-md pb-2 transition-all duration-300 ${isFocusMode ? 'h-[78vh]' : ''}`}>
+            <div className={`relative w-full bg-slate-950/95 rounded-3xl p-2.5 sm:p-4 border border-slate-800 shadow-2xl flex flex-col items-center justify-center overflow-hidden transition-all duration-300 ${isFocusMode ? 'h-full min-h-[70vh]' : 'h-[28vh] sm:h-[38vh] min-h-[170px] max-h-[220px] sm:max-h-[360px] lg:min-h-[460px] lg:max-h-[520px]'}`}>
+              
+              {/* Floating Canvas Top Bar Controls */}
+              <div className="absolute top-2 left-2 right-2 z-20 flex items-center justify-between pointer-events-none">
+                {/* Left: Undo & Redo quick floating pill */}
+                <div className="flex items-center gap-0.5 sm:gap-1 bg-slate-900/80 backdrop-blur-md p-1 rounded-xl border border-slate-700/60 shadow-lg pointer-events-auto">
+                  <button
+                    onClick={handleUndo}
+                    disabled={!canUndo}
+                    className="p-1 sm:p-1.5 rounded-lg text-slate-200 hover:text-white hover:bg-slate-800 disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer"
+                    title="Undo (Ctrl+Z)"
+                  >
+                    <Undo2 className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={handleRedo}
+                    disabled={!canRedo}
+                    className="p-1 sm:p-1.5 rounded-lg text-slate-200 hover:text-white hover:bg-slate-800 disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer"
+                    title="Redo (Ctrl+Y)"
+                  >
+                    <Redo2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+
+                {/* Right: Fullscreen Focus Mode Toggle & Quick Download */}
+                <div className="flex items-center gap-1 bg-slate-900/80 backdrop-blur-md p-1 rounded-xl border border-slate-700/60 shadow-lg pointer-events-auto">
+                  <button
+                    onClick={() => setIsFocusMode(!isFocusMode)}
+                    className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      isFocusMode 
+                        ? 'bg-indigo-600 text-white shadow-xs' 
+                        : 'text-slate-300 hover:text-white hover:bg-slate-800'
+                    }`}
+                    title={isFocusMode ? "Show Tools" : "Expand Fullscreen Canvas"}
+                  >
+                    {isFocusMode ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+                    <span className="text-[10px] hidden sm:inline">{isFocusMode ? 'Tools' : 'Focus'}</span>
+                  </button>
+                  <button
+                    onClick={() => downloadMeme('png')}
+                    className="p-1 sm:p-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white transition-colors cursor-pointer"
+                    title="Quick Download PNG"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
 
-              {/* Right: Fullscreen Focus Mode Toggle & Quick Download */}
-              <div className="flex items-center gap-1.5 bg-slate-900/80 backdrop-blur-md p-1 rounded-xl border border-slate-700/60 shadow-lg pointer-events-auto">
-                <button
-                  onClick={() => setIsFocusMode(!isFocusMode)}
-                  className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                    isFocusMode 
-                      ? 'bg-indigo-600 text-white shadow-xs' 
-                      : 'text-slate-300 hover:text-white hover:bg-slate-800'
-                  }`}
-                  title={isFocusMode ? "Show Tools" : "Expand Fullscreen Canvas"}
-                >
-                  {isFocusMode ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
-                  <span className="text-[10px] hidden sm:inline">{isFocusMode ? 'Tools' : 'Focus'}</span>
-                </button>
-                <button
-                  onClick={() => downloadMeme('png')}
-                  className="p-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white transition-colors cursor-pointer"
-                  title="Quick Download PNG"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                </button>
-              </div>
+              {/* Live Canvas */}
+              <canvas
+                ref={canvasRef}
+                className="touch-none select-none h-auto w-auto max-h-full max-w-full rounded-xl object-contain shadow-2xl cursor-grab active:cursor-grabbing"
+                onMouseDown={startDrag}
+                onMouseMove={moveDrag}
+                onMouseUp={endDrag}
+                onMouseLeave={endDrag}
+                onTouchStart={startDrag}
+                onTouchMove={moveDrag}
+                onTouchEnd={endDrag}
+              />
             </div>
-
-            {/* Live Canvas */}
-            <canvas
-              ref={canvasRef}
-              className="touch-none select-none h-auto w-auto max-h-full max-w-full rounded-xl object-contain shadow-2xl cursor-grab active:cursor-grabbing"
-              onMouseDown={startDrag}
-              onMouseMove={moveDrag}
-              onMouseUp={endDrag}
-              onMouseLeave={endDrag}
-              onTouchStart={startDrag}
-              onTouchMove={moveDrag}
-              onTouchEnd={endDrag}
-            />
           </div>
 
-          <p className="text-[10px] sm:text-[11px] font-semibold text-gray-500 dark:text-gray-400 mt-1.5 text-center">
+          <p className="text-[10px] sm:text-[11px] font-semibold text-gray-500 dark:text-gray-400 mt-1 text-center">
             💡 Drag text/stickers • Pinch with 2 fingers to resize on mobile
           </p>
 
@@ -1379,7 +1383,7 @@ export default function MemeGeneratorPage() {
             }}
           />
 
-          {/* Action Toolbar */}
+          {/* Action Toolbar (Normal scrollable flow - NOT frozen/sticky) */}
           <div className="flex flex-wrap items-center justify-between gap-2 w-full mt-3">
             <div className="flex items-center gap-2">
               <button
