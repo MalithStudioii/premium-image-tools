@@ -1560,12 +1560,17 @@ export default function PhotoEditorPage() {
             {/* TAB 3: AI ASSISTANT */}
             {activeTab === 'ai' && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
-                <div className="p-4 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/50 flex items-start gap-3">
-                  <Bot className="w-5 h-5 text-indigo-600 shrink-0 mt-0.5" />
+                <div className="p-4 rounded-2xl bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-pink-500/10 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-800/60 flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center text-white shrink-0 mt-0.5 shadow-xs">
+                    <Sparkles className="w-4 h-4 text-amber-300" />
+                  </div>
                   <div>
-                    <h4 className="text-xs font-bold text-indigo-950 dark:text-indigo-200">Gemini Vision AI Studio Copilot</h4>
-                    <p className="text-[11px] text-indigo-800 dark:text-indigo-300 mt-0.5">
-                      Generate viral titles, captions, hashtags, and visual enhancements for your photo.
+                    <div className="flex items-center gap-2">
+                      <h4 className="text-xs font-extrabold text-indigo-950 dark:text-indigo-200">Nexia AI Vision Studio Copilot</h4>
+                      <span className="text-[9px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-100 dark:bg-indigo-900/60 px-1.5 py-0.5 rounded-full">PRO</span>
+                    </div>
+                    <p className="text-[11px] text-gray-600 dark:text-gray-300 mt-1">
+                      Intelligent neural analysis to generate viral titles, compelling captions, and trending hashtags customized for your photo.
                     </p>
                   </div>
                 </div>
@@ -1573,10 +1578,10 @@ export default function PhotoEditorPage() {
                 <button
                   onClick={handleAiGenerateContent}
                   disabled={aiLoading}
-                  className="w-full py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md shadow-indigo-500/20 cursor-pointer disabled:opacity-50"
+                  className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-700 hover:to-pink-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md shadow-indigo-500/20 cursor-pointer disabled:opacity-50 transition-all hover:scale-[1.01] active:scale-[0.99]"
                 >
                   <Sparkles className="w-4 h-4 text-amber-300" />
-                  <span>{aiLoading ? 'AI Thinking...' : 'Analyze & Generate Viral Copy'}</span>
+                  <span>{aiLoading ? 'Nexia AI Generating...' : '✨ Generate Nexia Viral Copy & Tags'}</span>
                 </button>
 
                 {aiContent && (
