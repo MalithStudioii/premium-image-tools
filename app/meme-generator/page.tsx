@@ -352,11 +352,23 @@ export default function MemeGeneratorPage() {
   const [twitterHandle, setTwitterHandle] = useState<string>('@dev_guy');
 
   // Accordion Drawers UI State (Smart Tool Collapsible Drawers)
-  const [openSection, setOpenSection] = useState<'text' | 'layout' | 'emoji' | 'bg' | 'filters' | 'watermark' | 'layers' | null>('text');
+  const [openSection, setOpenSection] = useState<'text' | 'layout' | 'emoji' | 'bg' | 'filters' | 'watermark' | 'layers'>('text');
   const [isFocusMode, setIsFocusMode] = useState<boolean>(false);
 
+  const selectSection = (section: 'text' | 'layout' | 'emoji' | 'bg' | 'filters' | 'watermark' | 'layers') => {
+    setOpenSection(section);
+    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+      setTimeout(() => {
+        const el = document.getElementById(`section-${section}`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 50);
+    }
+  };
+
   const toggleSection = (section: 'text' | 'layout' | 'emoji' | 'bg' | 'filters' | 'watermark' | 'layers') => {
-    setOpenSection((prev) => (prev === section ? null : section));
+    selectSection(section);
   };
 
   // Emoji Picker Modal Popover States
@@ -1435,7 +1447,7 @@ export default function MemeGeneratorPage() {
             ].map((tool) => (
               <button
                 key={tool.id}
-                onClick={() => toggleSection(tool.id as any)}
+                onClick={() => selectSection(tool.id as any)}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 cursor-pointer whitespace-nowrap ${
                   openSection === tool.id
                     ? 'bg-indigo-600 text-white shadow-xs'
@@ -1450,17 +1462,17 @@ export default function MemeGeneratorPage() {
         </div>
 
         {/* Right Column: Customization & Overlay Controls (Accordion Drawers) */}
-        <div className={`lg:col-span-5 flex flex-col gap-4 ${isFocusMode ? 'hidden lg:flex' : 'flex'}`}>
+        <div id="meme-tool-panel" className={`lg:col-span-5 flex flex-col gap-4 ${isFocusMode ? 'hidden lg:flex' : 'flex'}`}>
           
           {/* Preset PNG Overlay Badges */}
-          <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-2xs">
+          <div id="section-layers" className="bg-white dark:bg-gray-900 p-4 rounded-2xl border border-gray-200/80 dark:border-gray-800 shadow-2xs">
             <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block mb-2">Quick Preset Overlays:</span>
             <div className="flex flex-wrap gap-1.5">
               {PRESET_OVERLAYS.map((preset) => (
                 <button
                   key={preset.name}
                   onClick={() => addOverlayLayer(preset.url, preset.name)}
-                  className="px-2.5 py-1 rounded-xl bg-gray-50 hover:bg-purple-50 border border-gray-200 hover:border-purple-300 text-xs font-bold text-gray-700 hover:text-purple-600 transition-all flex items-center gap-1 cursor-pointer"
+                  className="px-2.5 py-1 rounded-xl bg-gray-50 dark:bg-gray-800 hover:bg-purple-50 dark:hover:bg-purple-950/60 border border-gray-200 dark:border-gray-700 hover:border-purple-300 text-xs font-bold text-gray-700 dark:text-gray-200 hover:text-purple-600 transition-all flex items-center gap-1 cursor-pointer"
                 >
                   <span className="text-xs">+</span>
                   <span>{preset.name}</span>
@@ -1542,7 +1554,7 @@ export default function MemeGeneratorPage() {
           )}
 
           {/* 1. Text & Typography Accordion Drawer */}
-          <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden transition-all">
+          <div id="section-text" className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-200/80 dark:border-gray-800 shadow-sm overflow-hidden transition-all">
             <button
               onClick={() => toggleSection('text')}
               className="w-full flex items-center justify-between p-5 bg-white hover:bg-gray-50/80 transition-colors cursor-pointer text-left"
@@ -1799,7 +1811,7 @@ export default function MemeGeneratorPage() {
           </div>
 
           {/* 2. Layout & Aspect Ratio Accordion Drawer */}
-          <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden transition-all">
+          <div id="section-layout" className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-200/80 dark:border-gray-800 shadow-sm overflow-hidden transition-all">
             <button
               onClick={() => toggleSection('layout')}
               className="w-full flex items-center justify-between p-5 bg-white hover:bg-gray-50/80 transition-colors cursor-pointer text-left"
@@ -1900,7 +1912,7 @@ export default function MemeGeneratorPage() {
           </div>
 
           {/* 3. Emoji & Sticker Picker Accordion Drawer */}
-          <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden transition-all">
+          <div id="section-emoji" className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-200/80 dark:border-gray-800 shadow-sm overflow-hidden transition-all">
             <button
               onClick={() => toggleSection('emoji')}
               className="w-full flex items-center justify-between p-5 bg-white hover:bg-gray-50/80 transition-colors cursor-pointer text-left"
@@ -2076,7 +2088,7 @@ export default function MemeGeneratorPage() {
           </div>
 
           {/* 4. Canvas Background Fill Accordion Drawer */}
-          <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden transition-all">
+          <div id="section-bg" className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-200/80 dark:border-gray-800 shadow-sm overflow-hidden transition-all">
             <button
               onClick={() => toggleSection('bg')}
               className="w-full flex items-center justify-between p-5 bg-white hover:bg-gray-50/80 transition-colors cursor-pointer text-left"
@@ -2194,7 +2206,7 @@ export default function MemeGeneratorPage() {
           </div>
 
           {/* 5. Photo Filters & Effects Accordion Drawer */}
-          <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden transition-all">
+          <div id="section-filters" className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-200/80 dark:border-gray-800 shadow-sm overflow-hidden transition-all">
             <button
               onClick={() => toggleSection('filters')}
               className="w-full flex items-center justify-between p-5 bg-white hover:bg-gray-50/80 transition-colors cursor-pointer text-left"
@@ -2276,7 +2288,7 @@ export default function MemeGeneratorPage() {
           </div>
 
           {/* 6. Brand Watermark Tag Accordion Drawer */}
-          <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden transition-all">
+          <div id="section-watermark" className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-200/80 dark:border-gray-800 shadow-sm overflow-hidden transition-all">
             <button
               onClick={() => toggleSection('watermark')}
               className="w-full flex items-center justify-between p-5 bg-white hover:bg-gray-50/80 transition-colors cursor-pointer text-left"
