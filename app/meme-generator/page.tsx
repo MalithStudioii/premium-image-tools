@@ -1395,7 +1395,7 @@ export default function MemeGeneratorPage() {
             }}
           />
 
-          {/* Action Toolbar (Normal scrollable flow - NOT frozen/sticky) */}
+          {/* Action Toolbar (Normal scrollable flow) */}
           <div className="flex flex-wrap items-center justify-between gap-2 w-full mt-3">
             <div className="flex items-center gap-2">
               <button
@@ -1433,9 +1433,13 @@ export default function MemeGeneratorPage() {
               </button>
             </div>
           </div>
+        </div>
 
-          {/* Quick Tool Shortcut Bar */}
-          <div className="w-full mt-3 p-1.5 bg-white dark:bg-gray-900 rounded-2xl border border-gray-200/80 dark:border-gray-800 shadow-xs flex items-center justify-around overflow-x-auto no-scrollbar gap-1">
+        {/* Right Column: Unified Single-Pane Tabbed Studio Panel */}
+        <div id="meme-tool-panel" className={`lg:col-span-5 flex flex-col gap-3 ${isFocusMode ? 'hidden lg:flex' : 'flex'}`}>
+          
+          {/* Master Tool Switcher Tabs Bar */}
+          <div className="w-full p-1.5 bg-white dark:bg-gray-900 rounded-2xl border border-gray-200/80 dark:border-gray-800 shadow-xs flex items-center justify-around overflow-x-auto no-scrollbar gap-1">
             {[
               { id: 'text', icon: '📝', label: 'Text' },
               { id: 'layout', icon: '📐', label: 'Layout' },
@@ -1447,10 +1451,10 @@ export default function MemeGeneratorPage() {
             ].map((tool) => (
               <button
                 key={tool.id}
-                onClick={() => selectSection(tool.id as any)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 cursor-pointer whitespace-nowrap ${
+                onClick={() => setOpenSection(tool.id as any)}
+                className={`px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
                   openSection === tool.id
-                    ? 'bg-indigo-600 text-white shadow-xs'
+                    ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-sm ring-2 ring-indigo-500/20'
                     : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
                 }`}
               >
@@ -1459,39 +1463,18 @@ export default function MemeGeneratorPage() {
               </button>
             ))}
           </div>
-        </div>
 
-        {/* Right Column: Customization & Overlay Controls (Accordion Drawers) */}
-        <div id="meme-tool-panel" className={`lg:col-span-5 flex flex-col gap-4 ${isFocusMode ? 'hidden lg:flex' : 'flex'}`}>
-          
-          {/* Preset PNG Overlay Badges */}
-          <div id="section-layers" className="bg-white dark:bg-gray-900 p-4 rounded-2xl border border-gray-200/80 dark:border-gray-800 shadow-2xs">
-            <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block mb-2">Quick Preset Overlays:</span>
-            <div className="flex flex-wrap gap-1.5">
-              {PRESET_OVERLAYS.map((preset) => (
-                <button
-                  key={preset.name}
-                  onClick={() => addOverlayLayer(preset.url, preset.name)}
-                  className="px-2.5 py-1 rounded-xl bg-gray-50 dark:bg-gray-800 hover:bg-purple-50 dark:hover:bg-purple-950/60 border border-gray-200 dark:border-gray-700 hover:border-purple-300 text-xs font-bold text-gray-700 dark:text-gray-200 hover:text-purple-600 transition-all flex items-center gap-1 cursor-pointer"
-                >
-                  <span className="text-xs">+</span>
-                  <span>{preset.name}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Active Overlay Layer Inspector (shows when layer is clicked) */}
+          {/* Active Overlay Layer Inspector (Always available if an overlay layer is selected) */}
           {activeLayer && (
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="bg-purple-900 text-white p-5 rounded-3xl shadow-xl flex flex-col gap-3 border border-purple-800"
+              className="bg-purple-900 text-white p-4 rounded-2xl shadow-xl flex flex-col gap-3 border border-purple-800"
             >
               <div className="flex items-center justify-between border-b border-purple-800/80 pb-2">
                 <div className="flex items-center gap-2">
                   <Layers className="w-4 h-4 text-purple-300" />
-                  <span className="font-bold text-xs">Active Layer: {activeLayer.name}</span>
+                  <span className="font-bold text-xs">Selected Layer: {activeLayer.name}</span>
                 </div>
                 <button
                   onClick={deleteActiveLayer}
@@ -1553,68 +1536,59 @@ export default function MemeGeneratorPage() {
             </motion.div>
           )}
 
-          {/* 1. Text & Typography Accordion Drawer */}
-          <div id="section-text" className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-200/80 dark:border-gray-800 shadow-sm overflow-hidden transition-all">
-            <button
-              onClick={() => toggleSection('text')}
-              className="w-full flex items-center justify-between p-5 bg-white hover:bg-gray-50/80 transition-colors cursor-pointer text-left"
-            >
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600">
-                  <Type className="w-4 h-4" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-gray-900 text-sm">Text & Typography</h3>
-                  <p className="text-[11px] font-medium text-gray-500">Edit Top & Bottom Captions, Fonts & Glow</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-lg">
-                  {topText ? 'Top' : ''}{topText && bottomText ? ' & ' : ''}{bottomText ? 'Bottom' : ''} Text
-                </span>
-                {openSection === 'text' ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
-              </div>
-            </button>
-
-            <AnimatePresence>
+          {/* Dedicated In-Place Active Tool Body */}
+          <div className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-200/80 dark:border-gray-800 shadow-md p-4 sm:p-5 transition-all">
+            
+            <AnimatePresence mode="wait">
+              
+              {/* 1. TEXT & TYPOGRAPHY PANEL */}
               {openSection === 'text' && (
                 <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  className="p-5 pt-0 border-t border-gray-100 flex flex-col gap-4"
+                  key="text"
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -6 }}
+                  transition={{ duration: 0.15 }}
+                  className="flex flex-col gap-4"
                 >
-                  {/* Sync & Reset bar */}
-                  <div className="flex items-center justify-end gap-2 pt-3">
-                    <button
-                      onClick={() => {
-                        if (selectedTextTarget === 'top') setBottomStyle({ ...topStyle });
-                        else setTopStyle({ ...bottomStyle });
-                        pushHistorySnapshot();
-                      }}
-                      className="text-[11px] font-bold text-gray-600 hover:text-indigo-600 bg-gray-100 hover:bg-indigo-50 px-2 py-1 rounded-lg transition-colors cursor-pointer"
-                    >
-                      Sync Styles
-                    </button>
-                    <button
-                      onClick={() => {
-                        setTopTextPos({ x: 50, y: 12 });
-                        setBottomTextPos({ x: 50, y: 88 });
-                        pushHistorySnapshot();
-                      }}
-                      className="text-[11px] font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100/70 px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
-                    >
-                      Reset Positions
-                    </button>
+                  <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 pb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                        <Type className="w-3.5 h-3.5" />
+                      </div>
+                      <h3 className="font-bold text-gray-900 dark:text-white text-sm">Text & Typography</h3>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => {
+                          if (selectedTextTarget === 'top') setBottomStyle({ ...topStyle });
+                          else setTopStyle({ ...bottomStyle });
+                          pushHistorySnapshot();
+                        }}
+                        className="text-[11px] font-bold text-gray-600 dark:text-gray-300 hover:text-indigo-600 bg-gray-100 dark:bg-gray-800 hover:bg-indigo-50 dark:hover:bg-indigo-950 px-2 py-1 rounded-lg transition-colors cursor-pointer"
+                      >
+                        Sync Styles
+                      </button>
+                      <button
+                        onClick={() => {
+                          setTopTextPos({ x: 50, y: 12 });
+                          setBottomTextPos({ x: 50, y: 88 });
+                          pushHistorySnapshot();
+                        }}
+                        className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100/70 px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
+                      >
+                        Reset Positions
+                      </button>
+                    </div>
                   </div>
 
                   {/* Top Text Input */}
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <label className="block text-xs font-bold text-gray-700">Top Text</label>
+                      <label className="block text-xs font-bold text-gray-700 dark:text-gray-300">Top Text</label>
                       {topText.trim() && (
                         <button onClick={() => { setTopText(''); pushHistorySnapshot(); }} className="flex items-center gap-1 text-[11px] font-bold text-rose-600 hover:text-rose-700 cursor-pointer">
-                          <Trash2 className="w-3 h-3" /> Clear Text
+                          <Trash2 className="w-3 h-3" /> Clear
                         </button>
                       )}
                     </div>
@@ -1626,7 +1600,7 @@ export default function MemeGeneratorPage() {
                         onChange={(e) => setTopText(e.target.value)}
                         onBlur={() => pushHistorySnapshot()}
                         placeholder="Top caption..."
-                        className={`w-full px-3.5 py-2.5 pr-8 rounded-xl border text-xs font-bold text-gray-900 focus:outline-hidden transition-all ${selectedTextTarget === 'top' ? 'border-indigo-500 ring-2 ring-indigo-500/20 bg-indigo-50/20' : 'border-gray-200'}`}
+                        className={`w-full px-3.5 py-2.5 pr-8 rounded-xl border text-xs font-bold text-gray-900 dark:text-white bg-white dark:bg-gray-800 focus:outline-hidden transition-all ${selectedTextTarget === 'top' ? 'border-indigo-500 ring-2 ring-indigo-500/20 bg-indigo-50/20 dark:bg-indigo-950/30' : 'border-gray-200 dark:border-gray-700'}`}
                       />
                       {topText.trim() && (
                         <button onClick={() => { setTopText(''); pushHistorySnapshot(); }} className="absolute right-2.5 p-1 text-gray-400 hover:text-rose-600 transition-colors">
@@ -1639,10 +1613,10 @@ export default function MemeGeneratorPage() {
                   {/* Bottom Text Input */}
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <label className="block text-xs font-bold text-gray-700">Bottom Text</label>
+                      <label className="block text-xs font-bold text-gray-700 dark:text-gray-300">Bottom Text</label>
                       {bottomText.trim() && (
                         <button onClick={() => { setBottomText(''); pushHistorySnapshot(); }} className="flex items-center gap-1 text-[11px] font-bold text-rose-600 hover:text-rose-700 cursor-pointer">
-                          <Trash2 className="w-3 h-3" /> Clear Text
+                          <Trash2 className="w-3 h-3" /> Clear
                         </button>
                       )}
                     </div>
@@ -1654,7 +1628,7 @@ export default function MemeGeneratorPage() {
                         onChange={(e) => setBottomText(e.target.value)}
                         onBlur={() => pushHistorySnapshot()}
                         placeholder="Bottom caption..."
-                        className={`w-full px-3.5 py-2.5 pr-8 rounded-xl border text-xs font-bold text-gray-900 focus:outline-hidden transition-all ${selectedTextTarget === 'bottom' ? 'border-indigo-500 ring-2 ring-indigo-500/20 bg-indigo-50/20' : 'border-gray-200'}`}
+                        className={`w-full px-3.5 py-2.5 pr-8 rounded-xl border text-xs font-bold text-gray-900 dark:text-white bg-white dark:bg-gray-800 focus:outline-hidden transition-all ${selectedTextTarget === 'bottom' ? 'border-indigo-500 ring-2 ring-indigo-500/20 bg-indigo-50/20 dark:bg-indigo-950/30' : 'border-gray-200 dark:border-gray-700'}`}
                       />
                       {bottomText.trim() && (
                         <button onClick={() => { setBottomText(''); pushHistorySnapshot(); }} className="absolute right-2.5 p-1 text-gray-400 hover:text-rose-600 transition-colors">
@@ -1665,16 +1639,16 @@ export default function MemeGeneratorPage() {
                   </div>
 
                   {/* Target Selection Selector Tabs */}
-                  <div className="flex items-center gap-1.5 bg-gray-100 p-1.5 rounded-2xl">
+                  <div className="flex items-center gap-1.5 bg-gray-100 dark:bg-gray-800 p-1.5 rounded-2xl">
                     <button
                       onClick={() => { setSelectedTextTarget('top'); setActiveLayerId(null); }}
-                      className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${selectedTextTarget === 'top' ? 'bg-white text-indigo-600 shadow-2xs ring-1 ring-black/5' : 'text-gray-600 hover:text-gray-900'}`}
+                      className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${selectedTextTarget === 'top' ? 'bg-white dark:bg-gray-700 text-indigo-600 dark:text-indigo-400 shadow-2xs' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'}`}
                     >
                       Style Top Text
                     </button>
                     <button
                       onClick={() => { setSelectedTextTarget('bottom'); setActiveLayerId(null); }}
-                      className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${selectedTextTarget === 'bottom' ? 'bg-white text-indigo-600 shadow-2xs ring-1 ring-black/5' : 'text-gray-600 hover:text-gray-900'}`}
+                      className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${selectedTextTarget === 'bottom' ? 'bg-white dark:bg-gray-700 text-indigo-600 dark:text-indigo-400 shadow-2xs' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'}`}
                     >
                       Style Bottom Text
                     </button>
@@ -1683,11 +1657,11 @@ export default function MemeGeneratorPage() {
                   {/* Font Family & Size */}
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-bold text-gray-700 mb-1">Font Family</label>
+                      <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Font Family</label>
                       <select
                         value={activeStyle.fontFamily}
                         onChange={(e) => { updateActiveTextStyle({ fontFamily: e.target.value }); pushHistorySnapshot(); }}
-                        className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs font-bold text-gray-800 bg-white"
+                        className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-xs font-bold text-gray-800 dark:text-white bg-white dark:bg-gray-800"
                       >
                         <optgroup label="English Fonts">
                           <option value="Impact">Impact (Classic Meme)</option>
@@ -1707,7 +1681,7 @@ export default function MemeGeneratorPage() {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-bold text-gray-700 mb-1">Font Size: {activeStyle.fontSize}px</label>
+                      <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Font Size: {activeStyle.fontSize}px</label>
                       <input
                         type="range"
                         min="24"
@@ -1723,28 +1697,28 @@ export default function MemeGeneratorPage() {
                   {/* Text Color & Stroke Color */}
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-bold text-gray-700 mb-1">Text Color</label>
+                      <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Text Color</label>
                       <div className="flex items-center gap-2">
                         <input
                           type="color"
                           value={activeStyle.textColor}
                           onChange={(e) => { updateActiveTextStyle({ textColor: e.target.value }); pushHistorySnapshot(); }}
-                          className="w-9 h-9 rounded-lg border border-gray-200 cursor-pointer p-0.5"
+                          className="w-9 h-9 rounded-lg border border-gray-200 dark:border-gray-700 cursor-pointer p-0.5 bg-transparent"
                         />
-                        <span className="font-mono text-xs font-bold text-gray-700">{activeStyle.textColor}</span>
+                        <span className="font-mono text-xs font-bold text-gray-700 dark:text-gray-300">{activeStyle.textColor}</span>
                       </div>
                     </div>
 
                     <div>
-                      <label className="block text-xs font-bold text-gray-700 mb-1">Stroke Color</label>
+                      <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Stroke Color</label>
                       <div className="flex items-center gap-2">
                         <input
                           type="color"
                           value={activeStyle.strokeColor}
                           onChange={(e) => { updateActiveTextStyle({ strokeColor: e.target.value }); pushHistorySnapshot(); }}
-                          className="w-9 h-9 rounded-lg border border-gray-200 cursor-pointer p-0.5"
+                          className="w-9 h-9 rounded-lg border border-gray-200 dark:border-gray-700 cursor-pointer p-0.5 bg-transparent"
                         />
-                        <span className="font-mono text-xs font-bold text-gray-700">{activeStyle.strokeColor}</span>
+                        <span className="font-mono text-xs font-bold text-gray-700 dark:text-gray-300">{activeStyle.strokeColor}</span>
                       </div>
                     </div>
                   </div>
@@ -1752,7 +1726,7 @@ export default function MemeGeneratorPage() {
                   {/* Stroke Width & Uppercase Toggle */}
                   <div className="grid grid-cols-2 gap-4 items-center">
                     <div>
-                      <label className="block text-xs font-bold text-gray-700 mb-1">Stroke Width: {activeStyle.strokeWidth}px</label>
+                      <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Stroke Width: {activeStyle.strokeWidth}px</label>
                       <input
                         type="range"
                         min="0"
@@ -1772,27 +1746,27 @@ export default function MemeGeneratorPage() {
                         onChange={(e) => { updateActiveTextStyle({ isUppercase: e.target.checked }); pushHistorySnapshot(); }}
                         className="w-4 h-4 rounded-sm text-indigo-600 accent-indigo-600 cursor-pointer"
                       />
-                      <label htmlFor="uppercaseToggle" className="text-xs font-bold text-gray-700 cursor-pointer select-none">
+                      <label htmlFor="uppercaseToggle" className="text-xs font-bold text-gray-700 dark:text-gray-300 cursor-pointer select-none">
                         UPPERCASE
                       </label>
                     </div>
                   </div>
 
                   {/* Drop Shadow & Neon Glow */}
-                  <div className="pt-3 border-t border-gray-100 space-y-3">
-                    <span className="text-xs font-bold text-gray-700 block">Text Shadow / Outer Glow</span>
+                  <div className="pt-3 border-t border-gray-100 dark:border-gray-800 space-y-3">
+                    <span className="text-xs font-bold text-gray-700 dark:text-gray-300 block">Text Shadow / Outer Glow</span>
                     <div className="grid grid-cols-2 gap-3 items-center">
                       <div>
-                        <label className="block text-[11px] font-bold text-gray-600 mb-1">Glow Color</label>
+                        <label className="block text-[11px] font-bold text-gray-600 dark:text-gray-400 mb-1">Glow Color</label>
                         <input
                           type="color"
                           value={activeStyle.shadowColor}
                           onChange={(e) => { updateActiveTextStyle({ shadowColor: e.target.value }); pushHistorySnapshot(); }}
-                          className="w-full h-8 rounded-lg border border-gray-200 cursor-pointer p-0.5"
+                          className="w-full h-8 rounded-lg border border-gray-200 dark:border-gray-700 cursor-pointer p-0.5 bg-transparent"
                         />
                       </div>
                       <div>
-                        <label className="block text-[11px] font-bold text-gray-600 mb-1">Blur Radius: {activeStyle.shadowBlur}px</label>
+                        <label className="block text-[11px] font-bold text-gray-600 dark:text-gray-400 mb-1">Blur Radius: {activeStyle.shadowBlur}px</label>
                         <input
                           type="range"
                           min="0"
@@ -1807,78 +1781,66 @@ export default function MemeGeneratorPage() {
                   </div>
                 </motion.div>
               )}
-            </AnimatePresence>
-          </div>
 
-          {/* 2. Layout & Aspect Ratio Accordion Drawer */}
-          <div id="section-layout" className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-200/80 dark:border-gray-800 shadow-sm overflow-hidden transition-all">
-            <button
-              onClick={() => toggleSection('layout')}
-              className="w-full flex items-center justify-between p-5 bg-white hover:bg-gray-50/80 transition-colors cursor-pointer text-left"
-            >
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-purple-50 border border-purple-100 flex items-center justify-center text-purple-600">
-                  <LayoutTemplate className="w-4 h-4" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-gray-900 text-sm">Layout & Aspect Ratio</h3>
-                  <p className="text-[11px] font-medium text-gray-500">Classic Meme vs Twitter Card & Aspect Ratios</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-bold text-purple-600 bg-purple-50 px-2.5 py-1 rounded-lg">
-                  {aspectRatio} • {layoutMode === 'standard' ? 'Classic' : 'Twitter'}
-                </span>
-                {openSection === 'layout' ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
-              </div>
-            </button>
-
-            <AnimatePresence>
+              {/* 2. LAYOUT & ASPECT RATIO PANEL */}
               {openSection === 'layout' && (
                 <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  className="p-5 pt-0 border-t border-gray-100 flex flex-col gap-4"
+                  key="layout"
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -6 }}
+                  transition={{ duration: 0.15 }}
+                  className="flex flex-col gap-4"
                 >
-                  {/* Meme Layout Style Switcher */}
-                  <div className="pt-3 flex flex-col gap-2">
-                    <span className="text-xs font-bold text-gray-700">Layout Style</span>
+                  <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 pb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-xl bg-purple-50 dark:bg-purple-950/60 flex items-center justify-center text-purple-600 dark:text-purple-400">
+                        <LayoutTemplate className="w-3.5 h-3.5" />
+                      </div>
+                      <h3 className="font-bold text-gray-900 dark:text-white text-sm">Layout & Aspect Ratio</h3>
+                    </div>
+                    <span className="text-[10px] font-bold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/60 px-2.5 py-1 rounded-lg">
+                      {aspectRatio} • {layoutMode === 'standard' ? 'Classic' : 'Twitter'}
+                    </span>
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    <span className="text-xs font-bold text-gray-700 dark:text-gray-300">Layout Style</span>
                     <div className="grid grid-cols-2 gap-2">
                       <button
                         onClick={() => { setLayoutMode('standard'); pushHistorySnapshot(); }}
-                        className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all cursor-pointer ${layoutMode === 'standard' ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs' : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'}`}
+                        className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all cursor-pointer ${layoutMode === 'standard' ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs' : 'bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
                       >
                         🖼️ Classic Meme
                       </button>
                       <button
                         onClick={() => { setLayoutMode('twitter-card'); pushHistorySnapshot(); }}
-                        className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all cursor-pointer ${layoutMode === 'twitter-card' ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs' : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'}`}
+                        className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all cursor-pointer ${layoutMode === 'twitter-card' ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs' : 'bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
                       >
                         🐦 Twitter / X Card
                       </button>
                     </div>
 
                     {layoutMode === 'twitter-card' && (
-                      <div className="grid grid-cols-2 gap-3 pt-2 border-t border-gray-100">
+                      <div className="grid grid-cols-2 gap-3 pt-2 border-t border-gray-100 dark:border-gray-800">
                         <div>
-                          <label className="block text-[11px] font-bold text-gray-600 mb-1">Author Name</label>
+                          <label className="block text-[11px] font-bold text-gray-600 dark:text-gray-400 mb-1">Author Name</label>
                           <input
                             type="text"
                             value={twitterName}
                             onChange={(e) => setTwitterName(e.target.value)}
                             onBlur={() => pushHistorySnapshot()}
-                            className="w-full px-3 py-1.5 rounded-xl border border-gray-200 text-xs font-bold text-gray-800"
+                            className="w-full px-3 py-1.5 rounded-xl border border-gray-200 dark:border-gray-700 text-xs font-bold text-gray-800 dark:text-white bg-white dark:bg-gray-800"
                           />
                         </div>
                         <div>
-                          <label className="block text-[11px] font-bold text-gray-600 mb-1">@Handle</label>
+                          <label className="block text-[11px] font-bold text-gray-600 dark:text-gray-400 mb-1">@Handle</label>
                           <input
                             type="text"
                             value={twitterHandle}
                             onChange={(e) => setTwitterHandle(e.target.value)}
                             onBlur={() => pushHistorySnapshot()}
-                            className="w-full px-3 py-1.5 rounded-xl border border-gray-200 text-xs font-bold text-gray-800"
+                            className="w-full px-3 py-1.5 rounded-xl border border-gray-200 dark:border-gray-700 text-xs font-bold text-gray-800 dark:text-white bg-white dark:bg-gray-800"
                           />
                         </div>
                       </div>
@@ -1886,8 +1848,8 @@ export default function MemeGeneratorPage() {
                   </div>
 
                   {/* Aspect Ratio Presets */}
-                  <div className="pt-2 border-t border-gray-100">
-                    <label className="block text-xs font-bold text-gray-700 mb-2">Aspect Ratio Presets</label>
+                  <div className="pt-2 border-t border-gray-100 dark:border-gray-800">
+                    <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-2">Aspect Ratio Presets</label>
                     <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
                       {[
                         { id: '16:9', label: '16:9 Header' },
@@ -1899,7 +1861,7 @@ export default function MemeGeneratorPage() {
                         <button
                           key={ratio.id}
                           onClick={() => { setAspectRatio(ratio.id as any); pushHistorySnapshot(); }}
-                          className={`py-2 px-1 rounded-xl text-[11px] font-bold border transition-all cursor-pointer ${aspectRatio === ratio.id ? 'bg-indigo-50 border-indigo-500 text-indigo-700 shadow-2xs' : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'}`}
+                          className={`py-2 px-1 rounded-xl text-[11px] font-bold border transition-all cursor-pointer ${aspectRatio === ratio.id ? 'bg-indigo-50 dark:bg-indigo-950 border-indigo-500 text-indigo-700 dark:text-indigo-300 shadow-2xs' : 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
                         >
                           {ratio.label}
                         </button>
@@ -1908,41 +1870,30 @@ export default function MemeGeneratorPage() {
                   </div>
                 </motion.div>
               )}
-            </AnimatePresence>
-          </div>
 
-          {/* 3. Emoji & Sticker Picker Accordion Drawer */}
-          <div id="section-emoji" className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-200/80 dark:border-gray-800 shadow-sm overflow-hidden transition-all">
-            <button
-              onClick={() => toggleSection('emoji')}
-              className="w-full flex items-center justify-between p-5 bg-white hover:bg-gray-50/80 transition-colors cursor-pointer text-left"
-            >
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600">
-                  <Smile className="w-4 h-4" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-gray-900 text-sm">Emoji & Sticker Picker</h3>
-                  <p className="text-[11px] font-medium text-gray-500">150+ Win+. Style Searchable Emojis</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2.5 py-1 rounded-lg">
-                  150+ Emojis
-                </span>
-                {openSection === 'emoji' ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
-              </div>
-            </button>
-
-            <AnimatePresence>
+              {/* 3. EMOJI & STICKER PICKER PANEL */}
               {openSection === 'emoji' && (
                 <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  className="p-5 pt-0 border-t border-gray-100"
+                  key="emoji"
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -6 }}
+                  transition={{ duration: 0.15 }}
+                  className="flex flex-col gap-4"
                 >
-                  <div className="relative pt-3">
+                  <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 pb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-xl bg-amber-50 dark:bg-amber-950/60 flex items-center justify-center text-amber-600 dark:text-amber-400">
+                        <Smile className="w-3.5 h-3.5" />
+                      </div>
+                      <h3 className="font-bold text-gray-900 dark:text-white text-sm">Emoji & Sticker Picker</h3>
+                    </div>
+                    <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 px-2.5 py-1 rounded-lg">
+                      150+ Emojis
+                    </span>
+                  </div>
+
+                  <div className="relative">
                     {/* Picker Toggle Button */}
                     <button
                       onClick={() => setIsEmojiPickerOpen((prev) => !prev)}
@@ -1950,21 +1901,21 @@ export default function MemeGeneratorPage() {
                     >
                       <div className="flex items-center gap-2">
                         <Smile className="w-4 h-4 text-indigo-400" />
-                        <span>Open Emoji & Sticker Picker...</span>
+                        <span>Open Full Emoji Picker Library...</span>
                       </div>
                       <div className="flex items-center gap-1 bg-white/10 px-2.5 py-1 rounded-lg text-[11px] font-mono text-indigo-200">
-                        <span>😀 150+ Emojis</span>
+                        <span>Win+. Style</span>
                       </div>
                     </button>
 
                     {/* Toast Notification */}
                     {emojiAddedToast && (
-                      <div className="mt-2 text-center text-xs font-bold text-emerald-600 bg-emerald-50 border border-emerald-200/80 px-3 py-1.5 rounded-xl shadow-2xs">
+                      <div className="mt-2 text-center text-xs font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/80 dark:border-emerald-800 px-3 py-1.5 rounded-xl shadow-2xs">
                         ✨ Added {emojiAddedToast} sticker to canvas! (Drag or Pinch to resize)
                       </div>
                     )}
 
-                    {/* Windows Emoji Picker Popover Window */}
+                    {/* Full Emoji Picker Popover */}
                     <AnimatePresence>
                       {isEmojiPickerOpen && (
                         <motion.div
@@ -1973,12 +1924,11 @@ export default function MemeGeneratorPage() {
                           exit={{ opacity: 0, scale: 0.95, y: -5 }}
                           className="mt-2 bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden z-50 flex flex-col text-slate-100 max-h-[460px] w-full"
                         >
-                          {/* Title Bar */}
                           <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800 bg-slate-950/60">
                             <div className="flex items-center gap-2">
-                              <span className="font-bold text-xs text-slate-200">Emoji and more</span>
+                              <span className="font-bold text-xs text-slate-200">Emoji Library</span>
                               <span className="text-[10px] font-mono text-slate-400 bg-slate-800 px-1.5 py-0.5 rounded">
-                                Win+. Style
+                                150+ Emojis
                               </span>
                             </div>
                             <button onClick={() => setIsEmojiPickerOpen(false)} className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer">
@@ -1986,7 +1936,6 @@ export default function MemeGeneratorPage() {
                             </button>
                           </div>
 
-                          {/* Category Tabs Bar */}
                           <div className="flex items-center justify-around px-2 py-1.5 border-b border-slate-800 bg-slate-900/90 overflow-x-auto no-scrollbar">
                             <button
                               onClick={() => setActiveEmojiCategory('all')}
@@ -2006,7 +1955,6 @@ export default function MemeGeneratorPage() {
                             ))}
                           </div>
 
-                          {/* Search Bar */}
                           <div className="p-3 border-b border-slate-800/80 bg-slate-950/40">
                             <div className="relative flex items-center">
                               <Search className="w-4 h-4 text-slate-400 absolute left-3 pointer-events-none" />
@@ -2015,7 +1963,7 @@ export default function MemeGeneratorPage() {
                                 value={emojiSearchQuery}
                                 onChange={(e) => setEmojiSearchQuery(e.target.value)}
                                 placeholder="Search emojis..."
-                                className="w-full pl-9 pr-8 py-2 rounded-xl bg-slate-800/90 border border-slate-700/80 text-xs font-bold text-slate-100 placeholder-slate-400 focus:outline-hidden focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                                className="w-full pl-9 pr-8 py-2 rounded-xl bg-slate-800/90 border border-slate-700/80 text-xs font-bold text-slate-100 placeholder-slate-400 focus:outline-hidden focus:border-indigo-500"
                               />
                               {emojiSearchQuery && (
                                 <button onClick={() => setEmojiSearchQuery('')} className="absolute right-2.5 text-slate-400 hover:text-slate-200 cursor-pointer">
@@ -2025,8 +1973,7 @@ export default function MemeGeneratorPage() {
                             </div>
                           </div>
 
-                          {/* Emoji Grid Container */}
-                          <div className="p-3 overflow-y-auto max-h-[290px] space-y-4 text-left custom-scrollbar">
+                          <div className="p-3 overflow-y-auto max-h-[260px] space-y-4 text-left custom-scrollbar">
                             {filteredEmojiCategories.length === 0 ? (
                               <div className="text-center py-8 text-slate-500 text-xs font-medium">
                                 No emojis found matching "{emojiSearchQuery}"
@@ -2064,8 +2011,8 @@ export default function MemeGeneratorPage() {
                       )}
                     </AnimatePresence>
 
-                    {/* Quick Pick Emoji Bar below Modal Button */}
-                    <div className="flex flex-wrap items-center gap-1.5 mt-2.5">
+                    {/* Quick Pick Emoji Bar */}
+                    <div className="flex flex-wrap items-center gap-1.5 mt-3">
                       <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mr-1">Quick Add:</span>
                       {['🔥', '😂', '🚀', '💯', '👑', '🎯', '✨', '⚡', '🗿', '👀', '💪', '💰', '👍', '❤️', '🐐'].map((symbol) => (
                         <button
@@ -2075,7 +2022,7 @@ export default function MemeGeneratorPage() {
                             setEmojiAddedToast(symbol);
                             setTimeout(() => setEmojiAddedToast(null), 2500);
                           }}
-                          className="w-8 h-8 rounded-xl bg-gray-50 border border-gray-200 text-base flex items-center justify-center hover:bg-indigo-50 hover:border-indigo-400 hover:scale-110 transition-all cursor-pointer shadow-2xs"
+                          className="w-8 h-8 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-base flex items-center justify-center hover:bg-indigo-50 dark:hover:bg-indigo-950 hover:border-indigo-400 hover:scale-110 transition-all cursor-pointer shadow-2xs"
                         >
                           {symbol}
                         </button>
@@ -2084,41 +2031,30 @@ export default function MemeGeneratorPage() {
                   </div>
                 </motion.div>
               )}
-            </AnimatePresence>
-          </div>
 
-          {/* 4. Canvas Background Fill Accordion Drawer */}
-          <div id="section-bg" className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-200/80 dark:border-gray-800 shadow-sm overflow-hidden transition-all">
-            <button
-              onClick={() => toggleSection('bg')}
-              className="w-full flex items-center justify-between p-5 bg-white hover:bg-gray-50/80 transition-colors cursor-pointer text-left"
-            >
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600">
-                  <Palette className="w-4 h-4" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-gray-900 text-sm">Canvas Background Fill</h3>
-                  <p className="text-[11px] font-medium text-gray-500">Photo, Solid Colors & Linear Gradients</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg uppercase">
-                  {bgType}
-                </span>
-                {openSection === 'bg' ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
-              </div>
-            </button>
-
-            <AnimatePresence>
+              {/* 4. CANVAS BACKGROUND FILL PANEL */}
               {openSection === 'bg' && (
                 <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  className="p-5 pt-0 border-t border-gray-100 flex flex-col gap-4"
+                  key="bg"
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -6 }}
+                  transition={{ duration: 0.15 }}
+                  className="flex flex-col gap-4"
                 >
-                  <div className="flex gap-1.5 bg-gray-100 p-1.5 rounded-2xl pt-3">
+                  <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 pb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+                        <Palette className="w-3.5 h-3.5" />
+                      </div>
+                      <h3 className="font-bold text-gray-900 dark:text-white text-sm">Canvas Background Fill</h3>
+                    </div>
+                    <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-1 rounded-lg uppercase">
+                      {bgType}
+                    </span>
+                  </div>
+
+                  <div className="flex gap-1.5 bg-gray-100 dark:bg-gray-800 p-1.5 rounded-2xl">
                     {[
                       { id: 'photo', label: '📷 Photo' },
                       { id: 'solid', label: '🎨 Solid' },
@@ -2127,7 +2063,7 @@ export default function MemeGeneratorPage() {
                       <button
                         key={tab.id}
                         onClick={() => { setBgType(tab.id as any); pushHistorySnapshot(); }}
-                        className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${bgType === tab.id ? 'bg-white text-indigo-600 shadow-2xs ring-1 ring-black/5' : 'text-gray-600 hover:text-gray-900'}`}
+                        className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${bgType === tab.id ? 'bg-white dark:bg-gray-700 text-indigo-600 dark:text-indigo-400 shadow-2xs' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'}`}
                       >
                         {tab.label}
                       </button>
@@ -2137,12 +2073,12 @@ export default function MemeGeneratorPage() {
                   {bgType === 'solid' && (
                     <div className="space-y-3 pt-1">
                       <div className="flex items-center justify-between">
-                        <label className="text-xs font-bold text-gray-700">Solid Color</label>
+                        <label className="text-xs font-bold text-gray-700 dark:text-gray-300">Solid Color</label>
                         <input
                           type="color"
                           value={solidBgColor}
                           onChange={(e) => { setSolidBgColor(e.target.value); pushHistorySnapshot(); }}
-                          className="w-8 h-8 rounded-lg border border-gray-200 cursor-pointer p-0.5"
+                          className="w-8 h-8 rounded-lg border border-gray-200 dark:border-gray-700 cursor-pointer p-0.5 bg-transparent"
                         />
                       </div>
                       <div className="flex flex-wrap gap-1.5">
@@ -2162,21 +2098,21 @@ export default function MemeGeneratorPage() {
                     <div className="space-y-3 pt-1">
                       <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <label className="block text-[11px] font-bold text-gray-600 mb-1">Color 1</label>
+                          <label className="block text-[11px] font-bold text-gray-600 dark:text-gray-400 mb-1">Color 1</label>
                           <input
                             type="color"
                             value={gradientColor1}
                             onChange={(e) => { setGradientColor1(e.target.value); pushHistorySnapshot(); }}
-                            className="w-full h-8 rounded-lg border border-gray-200 cursor-pointer p-0.5"
+                            className="w-full h-8 rounded-lg border border-gray-200 dark:border-gray-700 cursor-pointer p-0.5 bg-transparent"
                           />
                         </div>
                         <div>
-                          <label className="block text-[11px] font-bold text-gray-600 mb-1">Color 2</label>
+                          <label className="block text-[11px] font-bold text-gray-600 dark:text-gray-400 mb-1">Color 2</label>
                           <input
                             type="color"
                             value={gradientColor2}
                             onChange={(e) => { setGradientColor2(e.target.value); pushHistorySnapshot(); }}
-                            className="w-full h-8 rounded-lg border border-gray-200 cursor-pointer p-0.5"
+                            className="w-full h-8 rounded-lg border border-gray-200 dark:border-gray-700 cursor-pointer p-0.5 bg-transparent"
                           />
                         </div>
                       </div>
@@ -2202,45 +2138,27 @@ export default function MemeGeneratorPage() {
                   )}
                 </motion.div>
               )}
-            </AnimatePresence>
-          </div>
 
-          {/* 5. Photo Filters & Effects Accordion Drawer */}
-          <div id="section-filters" className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-200/80 dark:border-gray-800 shadow-sm overflow-hidden transition-all">
-            <button
-              onClick={() => toggleSection('filters')}
-              className="w-full flex items-center justify-between p-5 bg-white hover:bg-gray-50/80 transition-colors cursor-pointer text-left"
-            >
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600">
-                  <Sliders className="w-4 h-4" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-gray-900 text-sm">Photo Filters & Effects</h3>
-                  <p className="text-[11px] font-medium text-gray-500">Brightness, Contrast, Blur & Presets</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg">
-                  {brightness !== 100 || bgBlur > 0 ? 'Custom Filter' : 'Normal'}
-                </span>
-                {openSection === 'filters' ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
-              </div>
-            </button>
-
-            <AnimatePresence>
+              {/* 5. PHOTO FILTERS & EFFECTS PANEL */}
               {openSection === 'filters' && (
                 <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  className="p-5 pt-0 border-t border-gray-100 flex flex-col gap-4"
+                  key="filters"
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -6 }}
+                  transition={{ duration: 0.15 }}
+                  className="flex flex-col gap-4"
                 >
-                  <div className="flex items-center justify-between pt-3">
-                    <span className="text-xs font-bold text-gray-700">Filter Presets</span>
+                  <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 pb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-xl bg-blue-50 dark:bg-blue-950/60 flex items-center justify-center text-blue-600 dark:text-blue-400">
+                        <Sliders className="w-3.5 h-3.5" />
+                      </div>
+                      <h3 className="font-bold text-gray-900 dark:text-white text-sm">Photo Filters & Effects</h3>
+                    </div>
                     <button
                       onClick={() => { setBrightness(100); setContrast(100); setSaturation(100); setBgBlur(0); setGrayscale(0); setSepia(0); pushHistorySnapshot(); }}
-                      className="text-[11px] font-bold text-indigo-600 hover:text-indigo-700 cursor-pointer"
+                      className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 cursor-pointer"
                     >
                       Reset Filters
                     </button>
@@ -2257,14 +2175,14 @@ export default function MemeGeneratorPage() {
                       <button
                         key={preset.label}
                         onClick={() => { setBrightness(preset.b); setContrast(preset.c); setSaturation(preset.s); setBgBlur(preset.blur); setGrayscale(preset.g); setSepia(preset.sep); pushHistorySnapshot(); }}
-                        className="px-2.5 py-1 rounded-xl bg-gray-50 hover:bg-indigo-50 border border-gray-200 text-xs font-bold text-gray-700 hover:text-indigo-600 transition-colors cursor-pointer"
+                        className="px-2.5 py-1 rounded-xl bg-gray-50 dark:bg-gray-800 hover:bg-indigo-50 dark:hover:bg-indigo-950 border border-gray-200 dark:border-gray-700 text-xs font-bold text-gray-700 dark:text-gray-300 hover:text-indigo-600 transition-colors cursor-pointer"
                       >
                         {preset.label}
                       </button>
                     ))}
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3 text-xs font-semibold text-gray-700 pt-1">
+                  <div className="grid grid-cols-2 gap-3 text-xs font-semibold text-gray-700 dark:text-gray-300 pt-1">
                     <div>
                       <span>Brightness: {brightness}%</span>
                       <input type="range" min="30" max="180" value={brightness} onChange={(e) => setBrightness(Number(e.target.value))} onMouseUp={() => pushHistorySnapshot()} className="w-full accent-indigo-600 mt-1" />
@@ -2284,71 +2202,60 @@ export default function MemeGeneratorPage() {
                   </div>
                 </motion.div>
               )}
-            </AnimatePresence>
-          </div>
 
-          {/* 6. Brand Watermark Tag Accordion Drawer */}
-          <div id="section-watermark" className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-200/80 dark:border-gray-800 shadow-sm overflow-hidden transition-all">
-            <button
-              onClick={() => toggleSection('watermark')}
-              className="w-full flex items-center justify-between p-5 bg-white hover:bg-gray-50/80 transition-colors cursor-pointer text-left"
-            >
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-pink-50 border border-pink-100 flex items-center justify-center text-pink-600">
-                  <Sparkles className="w-4 h-4" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-gray-900 text-sm">Brand Watermark Tag</h3>
-                  <p className="text-[11px] font-medium text-gray-500">Custom Brand Tag & Position</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className={`text-[10px] font-bold px-2.5 py-1 rounded-lg ${watermarkEnabled ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-100 text-gray-500'}`}>
-                  {watermarkEnabled ? watermarkText || 'Enabled' : 'Off'}
-                </span>
-                {openSection === 'watermark' ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
-              </div>
-            </button>
-
-            <AnimatePresence>
+              {/* 6. BRAND WATERMARK TAG PANEL */}
               {openSection === 'watermark' && (
                 <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  className="p-5 pt-0 border-t border-gray-100 flex flex-col gap-3"
+                  key="watermark"
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -6 }}
+                  transition={{ duration: 0.15 }}
+                  className="flex flex-col gap-3"
                 >
-                  <div className="flex items-center justify-between pt-3">
-                    <span className="text-xs font-bold text-gray-700">Enable Brand Watermark</span>
+                  <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 pb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-xl bg-pink-50 dark:bg-pink-950/60 flex items-center justify-center text-pink-600 dark:text-pink-400">
+                        <Sparkles className="w-3.5 h-3.5" />
+                      </div>
+                      <h3 className="font-bold text-gray-900 dark:text-white text-sm">Brand Watermark Tag</h3>
+                    </div>
+                    <span className={`text-[10px] font-bold px-2.5 py-1 rounded-lg ${watermarkEnabled ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400' : 'bg-gray-100 dark:bg-gray-800 text-gray-500'}`}>
+                      {watermarkEnabled ? watermarkText || 'Enabled' : 'Off'}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-1">
+                    <span className="text-xs font-bold text-gray-700 dark:text-gray-300">Enable Brand Watermark</span>
                     <input
                       type="checkbox"
                       checked={watermarkEnabled}
                       onChange={(e) => { setWatermarkEnabled(e.target.checked); pushHistorySnapshot(); }}
-                      className="w-4 h-4 rounded text-indigo-600 accent-indigo-600 cursor-pointer"
+                      className="w-4 h-4 rounded-sm text-indigo-600 accent-indigo-600 cursor-pointer"
                     />
                   </div>
 
                   {watermarkEnabled && (
-                    <div className="space-y-3 pt-2 border-t border-gray-100">
+                    <div className="space-y-3 pt-2 border-t border-gray-100 dark:border-gray-800">
                       <div>
-                        <label className="block text-[11px] font-bold text-gray-600 mb-1">Watermark Text</label>
+                        <label className="block text-[11px] font-bold text-gray-600 dark:text-gray-400 mb-1">Watermark Text</label>
                         <input
                           type="text"
                           value={watermarkText}
                           onChange={(e) => setWatermarkText(e.target.value)}
                           onBlur={() => pushHistorySnapshot()}
                           placeholder="@MyPageName"
-                          className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs font-bold text-gray-800"
+                          className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-xs font-bold text-gray-800 dark:text-white bg-white dark:bg-gray-800"
                         />
                       </div>
 
                       <div className="grid grid-cols-2 gap-2">
                         <div>
-                          <label className="block text-[11px] font-bold text-gray-600 mb-1">Corner Position</label>
+                          <label className="block text-[11px] font-bold text-gray-600 dark:text-gray-400 mb-1">Corner Position</label>
                           <select
                             value={watermarkPosition}
                             onChange={(e) => { setWatermarkPosition(e.target.value as any); pushHistorySnapshot(); }}
-                            className="w-full px-2 py-1.5 rounded-xl border border-gray-200 text-xs font-bold text-gray-800 bg-white"
+                            className="w-full px-2 py-1.5 rounded-xl border border-gray-200 dark:border-gray-700 text-xs font-bold text-gray-800 dark:text-white bg-white dark:bg-gray-800"
                           >
                             <option value="bottom-right">Bottom Right</option>
                             <option value="bottom-left">Bottom Left</option>
@@ -2357,7 +2264,7 @@ export default function MemeGeneratorPage() {
                           </select>
                         </div>
                         <div>
-                          <label className="block text-[11px] font-bold text-gray-600 mb-1">Opacity: {Math.round(watermarkOpacity * 100)}%</label>
+                          <label className="block text-[11px] font-bold text-gray-600 dark:text-gray-400 mb-1">Opacity: {Math.round(watermarkOpacity * 100)}%</label>
                           <input
                             type="range"
                             min="0.2"
@@ -2374,7 +2281,57 @@ export default function MemeGeneratorPage() {
                   )}
                 </motion.div>
               )}
+
+              {/* 7. PRESETS & OVERLAYS PANEL */}
+              {openSection === 'layers' && (
+                <motion.div
+                  key="layers"
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -6 }}
+                  transition={{ duration: 0.15 }}
+                  className="flex flex-col gap-3"
+                >
+                  <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 pb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-xl bg-purple-50 dark:bg-purple-950/60 flex items-center justify-center text-purple-600 dark:text-purple-400">
+                        <Sparkles className="w-3.5 h-3.5" />
+                      </div>
+                      <h3 className="font-bold text-gray-900 dark:text-white text-sm">Preset PNG Overlays</h3>
+                    </div>
+                    <span className="text-[10px] font-bold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/60 px-2.5 py-1 rounded-lg">
+                      1-Tap Add
+                    </span>
+                  </div>
+
+                  <span className="text-[11px] font-bold text-gray-500 dark:text-gray-400 block">Click any badge to insert overlay directly on canvas:</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {PRESET_OVERLAYS.map((preset) => (
+                      <button
+                        key={preset.name}
+                        onClick={() => addOverlayLayer(preset.url, preset.name)}
+                        className="px-3 py-1.5 rounded-xl bg-gray-50 dark:bg-gray-800 hover:bg-purple-50 dark:hover:bg-purple-950/60 border border-gray-200 dark:border-gray-700 hover:border-purple-300 text-xs font-bold text-gray-700 dark:text-gray-200 hover:text-purple-600 transition-all flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <span className="text-xs font-black text-purple-600">+</span>
+                        <span>{preset.name}</span>
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="pt-2 border-t border-gray-100 dark:border-gray-800">
+                    <button
+                      onClick={() => overlayFileInputRef.current?.click()}
+                      className="w-full py-2.5 px-4 rounded-xl border border-dashed border-purple-300 dark:border-purple-700 bg-purple-50/50 dark:bg-purple-950/30 hover:bg-purple-100/50 text-purple-700 dark:text-purple-300 font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-colors"
+                    >
+                      <Layers className="w-4 h-4" />
+                      <span>Upload Custom PNG Overlay from Device</span>
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+
             </AnimatePresence>
+
           </div>
 
         </div>
