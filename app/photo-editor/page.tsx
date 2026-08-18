@@ -7,7 +7,8 @@ import {
   Layers, Sliders, Eraser, Paintbrush, 
   SunMedium, Focus, Move, Circle, Flame,
   ShieldCheck, RotateCcw, Undo, Redo, RefreshCw,
-  Scissors, Zap, Bot, Copy, Check, MessageSquare
+  Scissors, Zap, Bot, Copy, Check, MessageSquare,
+  Maximize2, Minimize2
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -189,6 +190,7 @@ export default function PhotoEditorPage() {
   const [exportFormat, setExportFormat] = useState<'png' | 'jpeg' | 'webp'>('png');
   const [exportQuality] = useState<number>(92);
   const [isExporting, setIsExporting] = useState<boolean>(false);
+  const [isFocusMode, setIsFocusMode] = useState<boolean>(false);
 
   // --- Main Canvas Renderer ---
   const renderStudioCanvas = useCallback(() => {
@@ -879,6 +881,35 @@ export default function PhotoEditorPage() {
     setIsAutoRemoving(false);
   };
 
+  // AI Content Generator
+  const handleAiGenerateContent = async () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    setAiLoading(true);
+    setAiError(null);
+
+    try {
+      const imageBase64 = canvas.toDataURL('image/jpeg', 0.85);
+      const res = await fetch('/api/gemini', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageBase64, action: 'generate-caption' }),
+      });
+
+      const json = await res.json();
+      if (res.ok && json.content) {
+        setAiContent(json.content);
+      } else {
+        setAiError(json.error || 'Failed to generate copy');
+      }
+    } catch {
+      setAiError('Network error connecting to AI service');
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
   // Magic Wand Click
   const applyMagicWand = (clickX: number, clickY: number) => {
     const img = imageRef.current;
@@ -1149,13 +1180,119 @@ export default function PhotoEditorPage() {
           </div>
         </motion.div>
       ) : (
-        <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        <div className="w-full flex flex-col lg:grid lg:grid-cols-12 gap-6 sm:gap-8 items-start">
           
-          {/* LEFT SIDEBAR (5 Cols) */}
-          <div className="lg:col-span-5 bg-white p-5 rounded-3xl border border-gray-200/80 shadow-xl space-y-6">
+          {/* CANVAS PREVIEW STUDIO (TOP ON MOBILE WITH STICKY SPLIT-SCREEN, RIGHT ON DESKTOP) */}
+          <div className={`order-1 lg:order-2 lg:col-span-7 flex flex-col items-center sticky top-14 lg:top-6 self-start z-30 transition-all duration-300 w-full ${isFocusMode ? 'h-[78vh]' : ''}`}>
+            
+            {/* Top Preview Action Bar: Auto BG Remove, Undo, Redo, Focus Mode, Reset */}
+            <div className="w-full bg-white dark:bg-gray-900 px-3 sm:px-4 py-2 sm:py-2.5 rounded-2xl border border-gray-200/80 dark:border-gray-800 shadow-md mb-3 flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <button
+                  onClick={autoRemoveBackground}
+                  disabled={isAutoRemoving}
+                  className="py-1.5 px-2.5 sm:px-3 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-extrabold text-xs flex items-center gap-1.5 transition-all shadow-xs hover:shadow-md cursor-pointer disabled:opacity-50"
+                  title="Automatically remove background using Client AI"
+                >
+                  <Scissors className="w-3.5 h-3.5" />
+                  <span className="whitespace-nowrap">{isAutoRemoving ? 'Cutting...' : 'Auto BG'}</span>
+                </button>
+
+                <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 p-0.5 rounded-xl">
+                  <button
+                    onClick={handleUndo}
+                    disabled={historyIndex <= 0}
+                    className="p-1.5 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 font-bold text-xs transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                    title="Undo last action (Ctrl+Z)"
+                  >
+                    <Undo className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                  </button>
+                  <button
+                    onClick={handleRedo}
+                    disabled={historyIndex >= history.length - 1}
+                    className="p-1.5 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 font-bold text-xs transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                    title="Redo action (Ctrl+Y)"
+                  >
+                    <Redo className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                {/* Focus / Fullscreen Mode Toggle */}
+                <button
+                  onClick={() => setIsFocusMode(!isFocusMode)}
+                  className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    isFocusMode 
+                      ? 'bg-indigo-600 text-white shadow-xs' 
+                      : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200'
+                  }`}
+                  title={isFocusMode ? "Show Tools" : "Expand Fullscreen Canvas"}
+                >
+                  {isFocusMode ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+                  <span className="text-[10px] hidden sm:inline">{isFocusMode ? 'Tools' : 'Focus'}</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    if (history.length > 0) {
+                      setHistoryIndex(0);
+                      restoreHistoryStep(history[0]);
+                    }
+                  }}
+                  className="py-1.5 px-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/50 hover:bg-rose-100 dark:hover:bg-rose-900 text-rose-700 dark:text-rose-300 font-bold text-xs flex items-center gap-1 transition-all cursor-pointer"
+                  title="Reset to original photo"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Reset</span>
+                </button>
+
+                <button
+                  onClick={handleExport}
+                  disabled={isExporting}
+                  className="py-1.5 px-3 rounded-xl bg-gray-900 dark:bg-white hover:bg-black dark:hover:bg-gray-100 text-white dark:text-gray-900 font-bold text-xs flex items-center gap-1 shadow-xs transition-all cursor-pointer disabled:opacity-50"
+                  title="Export photo"
+                >
+                  <Download className="w-3.5 h-3.5 text-indigo-400 dark:text-indigo-600" />
+                  <span className="hidden sm:inline">Save</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Canvas Container */}
+            <div className={`relative w-full bg-gray-950/95 backdrop-blur-xl p-3 sm:p-6 rounded-3xl border border-gray-800 shadow-2xl flex items-center justify-center overflow-hidden transition-all duration-300 ${isFocusMode ? 'h-full min-h-[70vh]' : 'h-[36vh] sm:h-[44vh] min-h-[220px] max-h-[340px] sm:max-h-[460px] lg:min-h-[460px] lg:max-h-[600px]'}`}>
+              
+              <div 
+                className="relative rounded-2xl overflow-hidden shadow-2xl max-w-full max-h-full border border-gray-700/80 flex items-center justify-center"
+                style={{
+                  backgroundImage: bgMode === 'transparent' ? 'radial-gradient(#4b5563 1px, transparent 1px)' : 'none',
+                  backgroundSize: '16px 16px',
+                  backgroundColor: bgMode === 'transparent' ? '#1f2937' : 'transparent',
+                }}
+              >
+                <canvas
+                  ref={canvasRef}
+                  onMouseDown={handleCanvasMouseDown}
+                  onMouseMove={handleCanvasMouseMove}
+                  onMouseUp={handleCanvasMouseUp}
+                  className="max-w-full max-h-full object-contain cursor-crosshair block"
+                />
+              </div>
+
+            </div>
+
+            <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mt-2 font-medium flex items-center gap-1.5">
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+              <span>Full HD Client-Side Canvas Rendering</span>
+            </p>
+
+          </div>
+
+          {/* LEFT/BOTTOM SIDEBAR (TOOLS DRAWER) */}
+          <div className={`order-2 lg:order-1 lg:col-span-5 bg-white dark:bg-gray-900 p-4 sm:p-5 rounded-3xl border border-gray-200/80 dark:border-gray-800 shadow-xl space-y-6 w-full ${isFocusMode ? 'hidden lg:block' : 'block'}`}>
             
             {/* Tool Tabs Navigation */}
-            <div className="grid grid-cols-4 sm:grid-cols-7 gap-1 p-1 bg-gray-100/80 rounded-2xl">
+            <div className="flex overflow-x-auto no-scrollbar sm:grid sm:grid-cols-7 gap-1 p-1 bg-gray-100/80 dark:bg-gray-800/80 rounded-2xl">
               {[
                 { id: 'templates', label: 'Presets', icon: Layers },
                 { id: 'eraser', label: 'Eraser', icon: Eraser },
@@ -1171,10 +1308,10 @@ export default function PhotoEditorPage() {
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id as 'templates' | 'eraser' | 'lightfx' | 'flare' | 'blur' | 'adjustments' | 'ai')}
-                    className={`flex flex-col items-center justify-center py-2 px-0.5 rounded-xl text-[10px] font-bold transition-all cursor-pointer ${
+                    className={`flex flex-col items-center justify-center py-2 px-3 sm:px-0.5 rounded-xl text-[10px] font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 sm:shrink ${
                       isActive
-                        ? 'bg-white text-indigo-600 shadow-md shadow-gray-200'
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200/60'
+                        ? 'bg-white dark:bg-gray-900 text-indigo-600 dark:text-indigo-400 shadow-md shadow-gray-200/50 dark:shadow-none'
+                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200/60 dark:hover:bg-gray-700/60'
                     }`}
                   >
                     <Icon className="w-3.5 h-3.5 mb-1" />
@@ -1398,102 +1535,50 @@ export default function PhotoEditorPage() {
             {/* TAB 3: AI ASSISTANT */}
             {activeTab === 'ai' && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500 flex items-center gap-1.5">
-                    <Bot className="w-4 h-4 text-indigo-600" />
-                    Smart AI Assistant
-                  </h3>
-                  <span className="text-[10px] font-bold bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full border border-indigo-100">
-                    Secure Server Route
-                  </span>
+                <div className="p-4 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/50 flex items-start gap-3">
+                  <Bot className="w-5 h-5 text-indigo-600 shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="text-xs font-bold text-indigo-950 dark:text-indigo-200">Gemini Vision AI Studio Copilot</h4>
+                    <p className="text-[11px] text-indigo-800 dark:text-indigo-300 mt-0.5">
+                      Generate viral titles, captions, hashtags, and visual enhancements for your photo.
+                    </p>
+                  </div>
                 </div>
 
-                {aiError && (
-                  <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium">
-                    {aiError}
-                  </div>
-                )}
-
-                {/* 1-Click AI Auto Enhance */}
                 <button
-                  onClick={() => callGeminiApi('auto-enhance')}
+                  onClick={handleAiGenerateContent}
                   disabled={aiLoading}
-                  className="w-full py-3 px-4 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md shadow-indigo-500/20 transition-all cursor-pointer disabled:opacity-50"
+                  className="w-full py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md shadow-indigo-500/20 cursor-pointer disabled:opacity-50"
                 >
-                  <Sparkles className="w-4 h-4" />
-                  <span>{aiLoading ? 'Gemini AI Processing...' : '⚡ AI Smart Auto-Enhance'}</span>
+                  <Sparkles className="w-4 h-4 text-amber-300" />
+                  <span>{aiLoading ? 'AI Thinking...' : 'Analyze & Generate Viral Copy'}</span>
                 </button>
 
-                {aiSummary && (
-                  <div className="p-3 rounded-2xl bg-indigo-50/80 border border-indigo-100 text-xs text-indigo-900 font-medium">
-                    💡 <strong>AI Analysis:</strong> {aiSummary}
-                  </div>
-                )}
-
-                {/* AI Prompt Custom Style */}
-                <div className="p-3.5 rounded-2xl bg-gray-50 border border-gray-200/80 space-y-2">
-                  <label className="text-xs font-bold text-gray-800 flex items-center gap-1.5">
-                    <MessageSquare className="w-3.5 h-3.5 text-indigo-600" />
-                    AI Style Prompt
-                  </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      placeholder="e.g. Cinematic warm sunset vibe..."
-                      value={aiPromptInput}
-                      onChange={(e) => setAiPromptInput(e.target.value)}
-                      className="flex-1 px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-indigo-600"
-                    />
-                    <button
-                      onClick={() => callGeminiApi('prompt-edit', aiPromptInput)}
-                      disabled={aiLoading || !aiPromptInput.trim()}
-                      className="py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs cursor-pointer disabled:opacity-50"
-                    >
-                      Apply
-                    </button>
-                  </div>
-                </div>
-
-                {/* AI Social Caption Generator */}
-                <div className="p-3.5 rounded-2xl bg-purple-50/60 border border-purple-200/60 space-y-2">
-                  <button
-                    onClick={() => callGeminiApi('generate-caption')}
-                    disabled={aiLoading}
-                    className="w-full py-2.5 px-3 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
-                  >
-                    <Wand2 className="w-3.5 h-3.5" />
-                    <span>Generate Viral Captions & Hashtags</span>
-                  </button>
-
-                  {aiContent && (
-                    <div className="space-y-2 pt-2 border-t border-purple-200/50 text-xs">
-                      <p className="font-bold text-purple-900">{aiContent.title}</p>
-                      <p className="text-gray-700 leading-relaxed bg-white p-2.5 rounded-xl border border-purple-100">
-                        {aiContent.caption}
-                      </p>
+                {aiContent && (
+                  <div className="p-4 rounded-2xl bg-gray-50 dark:bg-gray-800/60 border border-gray-200/80 dark:border-gray-700/80 space-y-3">
+                    {aiContent.title && (
+                      <div>
+                        <span className="text-[10px] font-bold uppercase text-gray-400 block">Suggested Title:</span>
+                        <p className="text-xs font-bold text-gray-900 dark:text-white">{aiContent.title}</p>
+                      </div>
+                    )}
+                    {aiContent.caption && (
+                      <div>
+                        <span className="text-[10px] font-bold uppercase text-gray-400 block">Caption:</span>
+                        <p className="text-xs text-gray-700 dark:text-gray-300">{aiContent.caption}</p>
+                      </div>
+                    )}
+                    {aiContent.hashtags && (
                       <div className="flex flex-wrap gap-1">
-                        {aiContent.hashtags?.map((tag: string) => (
-                          <span key={tag} className="text-[10px] font-bold text-purple-700 bg-purple-100 px-1.5 py-0.5 rounded">
+                        {aiContent.hashtags.map((tag, idx) => (
+                          <span key={idx} className="text-[10px] font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 px-2 py-0.5 rounded-md">
                             {tag}
                           </span>
                         ))}
                       </div>
-                      <button
-                        onClick={() => {
-                          const fullText = `${aiContent.title}\n\n${aiContent.caption}\n\n${aiContent.hashtags?.join(' ')}`;
-                          navigator.clipboard.writeText(fullText);
-                          setCopiedCaption(true);
-                          setTimeout(() => setCopiedCaption(false), 2000);
-                        }}
-                        className="py-1.5 px-3 rounded-lg bg-purple-100 hover:bg-purple-200 text-purple-800 font-bold text-[11px] flex items-center gap-1 cursor-pointer"
-                      >
-                        {copiedCaption ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-                        <span>{copiedCaption ? 'Copy Post Content' : 'Copy Post Content'}</span>
-                      </button>
-                    </div>
-                  )}
-                </div>
-
+                    )}
+                  </div>
+                )}
               </motion.div>
             )}
 
@@ -1501,168 +1586,147 @@ export default function PhotoEditorPage() {
             {activeTab === 'lightfx' && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
                 <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">
-                  Lighting & Volumetric Overlays
+                  Volumetric Lighting & Atmosphere
                 </h3>
 
-                <div className="p-3.5 rounded-2xl bg-amber-50/50 border border-amber-200/60 space-y-3">
+                {/* Sunbeams Toggle */}
+                <div className="p-3.5 rounded-2xl border border-gray-200 dark:border-gray-700 space-y-2">
                   <div className="flex items-center justify-between">
-                    <label className="text-xs font-bold text-amber-900 flex items-center gap-2">
-                      <SunMedium className="w-4 h-4 text-amber-600" />
-                      Sunbeams / Volumetric Light
-                    </label>
+                    <span className="text-xs font-bold text-gray-800 dark:text-gray-200 flex items-center gap-1.5">
+                      <SunMedium className="w-4 h-4 text-amber-500" />
+                      Sunbeams (God Rays)
+                    </span>
                     <input
                       type="checkbox"
                       checked={lightFx.sunbeamEnabled}
                       onChange={(e) => {
                         setLightFx({ ...lightFx, sunbeamEnabled: e.target.checked });
-                        setTimeout(saveHistoryStep, 50);
+                        setTimeout(saveHistoryStep, 100);
                       }}
-                      className="w-4 h-4 accent-amber-600 rounded cursor-pointer"
+                      className="w-4 h-4 accent-indigo-600 rounded cursor-pointer"
                     />
                   </div>
                   {lightFx.sunbeamEnabled && (
-                    <div className="space-y-2 pt-2 border-t border-amber-200/50">
-                      <div className="flex justify-between text-xs text-amber-800">
-                        <span>Light Beam Angle:</span>
-                        <span>{lightFx.sunbeamAngle}°</span>
+                    <div className="space-y-2 pt-1 border-t border-gray-100 dark:border-gray-800">
+                      <div className="flex justify-between text-xs text-gray-600 dark:text-gray-400">
+                        <span>Ray Intensity:</span>
+                        <span>{lightFx.sunbeamIntensity}%</span>
                       </div>
                       <input
                         type="range"
-                        min="0"
-                        max="360"
-                        value={lightFx.sunbeamAngle}
-                        onChange={(e) => setLightFx({ ...lightFx, sunbeamAngle: Number(e.target.value) })}
+                        min="10"
+                        max="100"
+                        value={lightFx.sunbeamIntensity}
+                        onChange={(e) => setLightFx({ ...lightFx, sunbeamIntensity: Number(e.target.value) })}
                         onMouseUp={() => saveHistoryStep()}
-                        className="w-full accent-amber-600"
+                        className="w-full accent-amber-500"
                       />
                     </div>
                   )}
                 </div>
 
-                <div className="p-3.5 rounded-2xl bg-blue-50/50 border border-blue-200/60 space-y-3">
+                {/* Neon Glow Toggle */}
+                <div className="p-3.5 rounded-2xl border border-gray-200 dark:border-gray-700 space-y-2">
                   <div className="flex items-center justify-between">
-                    <label className="text-xs font-bold text-blue-900 flex items-center gap-2">
-                      <Flame className="w-4 h-4 text-blue-600" />
-                      Neon Edge Glow
-                    </label>
+                    <span className="text-xs font-bold text-gray-800 dark:text-gray-200 flex items-center gap-1.5">
+                      <Flame className="w-4 h-4 text-rose-500" />
+                      Cyber Neon Aura
+                    </span>
                     <input
                       type="checkbox"
                       checked={lightFx.neonEnabled}
                       onChange={(e) => {
                         setLightFx({ ...lightFx, neonEnabled: e.target.checked });
-                        setTimeout(saveHistoryStep, 50);
+                        setTimeout(saveHistoryStep, 100);
                       }}
-                      className="w-4 h-4 accent-blue-600 rounded cursor-pointer"
+                      className="w-4 h-4 accent-indigo-600 rounded cursor-pointer"
                     />
                   </div>
                   {lightFx.neonEnabled && (
-                    <div className="flex items-center gap-3 pt-2 border-t border-blue-200/50">
-                      <label className="text-xs text-blue-800 font-bold">Glow Color:</label>
+                    <div className="space-y-2 pt-1 border-t border-gray-100 dark:border-gray-800">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-gray-600 dark:text-gray-400">Aura Color:</span>
+                        <input
+                          type="color"
+                          value={lightFx.neonColor}
+                          onChange={(e) => setLightFx({ ...lightFx, neonColor: e.target.value })}
+                          className="w-6 h-6 rounded cursor-pointer"
+                        />
+                      </div>
+                      <div className="flex justify-between text-xs text-gray-600 dark:text-gray-400">
+                        <span>Glow Radius:</span>
+                        <span>{lightFx.neonRadius}px</span>
+                      </div>
                       <input
-                        type="color"
-                        value={lightFx.neonColor}
-                        onChange={(e) => {
-                          setLightFx({ ...lightFx, neonColor: e.target.value });
-                          setTimeout(saveHistoryStep, 100);
-                        }}
-                        className="w-8 h-8 rounded-lg border border-gray-300 cursor-pointer"
+                        type="range"
+                        min="5"
+                        max="60"
+                        value={lightFx.neonRadius}
+                        onChange={(e) => setLightFx({ ...lightFx, neonRadius: Number(e.target.value) })}
+                        onMouseUp={() => saveHistoryStep()}
+                        className="w-full accent-rose-500"
                       />
                     </div>
                   )}
                 </div>
-
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    onClick={() => {
-                      setLightFx({ ...lightFx, bokehEnabled: !lightFx.bokehEnabled });
-                      setTimeout(saveHistoryStep, 50);
-                    }}
-                    className={`p-3 rounded-2xl border text-center transition-all cursor-pointer ${
-                      lightFx.bokehEnabled ? 'border-purple-600 bg-purple-50 text-purple-700 font-bold' : 'border-gray-200 text-gray-700 font-medium'
-                    }`}
-                  >
-                    <Sparkles className="w-4 h-4 mx-auto mb-1 text-purple-600" />
-                    <span className="text-xs">Bokeh Spheres</span>
-                  </button>
-                  <button
-                    onClick={() => {
-                      setLightFx({ ...lightFx, spotlightEnabled: !lightFx.spotlightEnabled });
-                      setTimeout(saveHistoryStep, 50);
-                    }}
-                    className={`p-3 rounded-2xl border text-center transition-all cursor-pointer ${
-                      lightFx.spotlightEnabled ? 'border-rose-600 bg-rose-50 text-rose-700 font-bold' : 'border-gray-200 text-gray-700 font-medium'
-                    }`}
-                  >
-                    <Circle className="w-4 h-4 mx-auto mb-1 text-rose-600" />
-                    <span className="text-xs">Spotlight Focus</span>
-                  </button>
-                </div>
               </motion.div>
             )}
 
-            {/* TAB 5: LENS FLARE */}
+            {/* TAB 5: FLARE */}
             {activeTab === 'flare' && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500">
-                    Optical Lens Flare FX
+                    Interactive Lens Flare
                   </h3>
-                  <label className="flex items-center gap-2 text-xs font-bold text-indigo-700 cursor-pointer">
-                    <span>Enable Flare</span>
-                    <input
-                      type="checkbox"
-                      checked={flare.enabled}
-                      onChange={(e) => {
-                        setFlare({ ...flare, enabled: e.target.checked });
-                        setTimeout(saveHistoryStep, 50);
-                      }}
-                      className="w-4 h-4 accent-indigo-600 rounded"
-                    />
-                  </label>
+                  <input
+                    type="checkbox"
+                    checked={flare.enabled}
+                    onChange={(e) => {
+                      setFlare({ ...flare, enabled: e.target.checked });
+                      setTimeout(saveHistoryStep, 100);
+                    }}
+                    className="w-4 h-4 accent-indigo-600 rounded cursor-pointer"
+                  />
                 </div>
 
                 {flare.enabled && (
-                  <div className="space-y-4">
-                    <p className="text-[11px] text-gray-500 bg-indigo-50 p-2.5 rounded-xl border border-indigo-100 flex items-center gap-2">
-                      <Move className="w-4 h-4 text-indigo-600 shrink-0" />
-                      <span>Click or drag directly on the photo preview to position flare source!</span>
+                  <div className="space-y-3 pt-1">
+                    <p className="text-[11px] text-gray-500">
+                      💡 Click & drag directly on the canvas above to reposition the flare origin.
                     </p>
 
                     <div>
-                      <label className="text-xs font-bold text-gray-700 block mb-2">Flare Style:</label>
+                      <span className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">Flare Type:</span>
                       <div className="grid grid-cols-3 gap-2">
-                        {[
-                          { id: 'sunburst', label: 'Sunburst' },
-                          { id: 'anamorphic', label: 'Anamorphic' },
-                          { id: 'hexagon', label: 'Hexagon' },
-                        ].map((style) => (
+                        {(['sunburst', 'anamorphic', 'hexagon'] as const).map((t) => (
                           <button
-                            key={style.id}
+                            key={t}
                             onClick={() => {
-                              setFlare({ ...flare, type: style.id as 'anamorphic' | 'sunburst' | 'hexagon' });
+                              setFlare({ ...flare, type: t });
                               setTimeout(saveHistoryStep, 50);
                             }}
-                            className={`py-2 px-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
-                              flare.type === style.id
-                                ? 'border-indigo-600 bg-indigo-50 text-indigo-700 shadow-xs'
-                                : 'border-gray-200 hover:bg-gray-50 text-gray-600'
+                            className={`py-1.5 px-2 rounded-xl text-xs font-bold capitalize transition-all cursor-pointer border ${
+                              flare.type === t
+                                ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300'
+                                : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400'
                             }`}
                           >
-                            {style.label}
+                            {t}
                           </button>
                         ))}
                       </div>
                     </div>
 
                     <div>
-                      <div className="flex justify-between text-xs font-bold text-gray-700 mb-1">
+                      <div className="flex justify-between text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">
                         <span>Flare Intensity:</span>
                         <span>{flare.intensity}%</span>
                       </div>
                       <input
                         type="range"
-                        min="10"
-                        max="100"
+                        min="20"
+                        max="150"
                         value={flare.intensity}
                         onChange={(e) => setFlare({ ...flare, intensity: Number(e.target.value) })}
                         onMouseUp={() => saveHistoryStep()}
@@ -1678,25 +1742,24 @@ export default function PhotoEditorPage() {
             {activeTab === 'blur' && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
                 <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">
-                  Blur & Depth of Field Modes
+                  Optical Bokeh & Focus Blur
                 </h3>
 
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-3 gap-2">
                   {[
-                    { id: 'none', label: 'No Blur' },
-                    { id: 'gaussian', label: 'Gaussian Blur' },
-                    { id: 'radial', label: 'Bokeh Radial' },
-                    { id: 'tilt_shift', label: 'Tilt-Shift Focus' },
+                    { id: 'none', label: 'None' },
+                    { id: 'gaussian', label: 'Gaussian' },
+                    { id: 'radial', label: 'Radial Zoom' },
                   ].map((mode) => (
                     <button
                       key={mode.id}
                       onClick={() => {
-                        setBlurMode(mode.id as 'none' | 'gaussian' | 'radial' | 'tilt_shift');
+                        setBlurMode(mode.id as any);
                         setTimeout(saveHistoryStep, 50);
                       }}
-                      className={`p-3 rounded-2xl border text-xs font-bold transition-all cursor-pointer ${
+                      className={`py-2 px-2 rounded-xl text-xs font-bold border text-center transition-all cursor-pointer ${
                         blurMode === mode.id
-                          ? 'border-indigo-600 bg-indigo-50 text-indigo-700'
+                          ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300'
                           : 'border-gray-200 hover:bg-gray-50 text-gray-600'
                       }`}
                     >
@@ -1704,72 +1767,13 @@ export default function PhotoEditorPage() {
                     </button>
                   ))}
                 </div>
-
-                {blurMode === 'gaussian' && (
-                  <div>
-                    <div className="flex justify-between text-xs font-bold text-gray-700 mb-1">
-                      <span>Blur Strength:</span>
-                      <span>{blurSettings.gaussian}px</span>
-                    </div>
-                    <input
-                      type="range"
-                      min="1"
-                      max="50"
-                      value={blurSettings.gaussian}
-                      onChange={(e) => setBlurSettings({ ...blurSettings, gaussian: Number(e.target.value) })}
-                      onMouseUp={() => saveHistoryStep()}
-                      className="w-full accent-indigo-600"
-                    />
-                  </div>
-                )}
-              </motion.div>
-            )}
-
-            {/* TAB 7: ADJUSTMENTS */}
-            {activeTab === 'adjustments' && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">
-                  Brightness, Contrast & Tone
-                </h3>
-
-                <div>
-                  <div className="flex justify-between text-xs font-bold text-gray-700 mb-1">
-                    <span>Brightness:</span>
-                    <span>{adjustments.brightness}</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="-100"
-                    max="100"
-                    value={adjustments.brightness}
-                    onChange={(e) => setAdjustments({ ...adjustments, brightness: Number(e.target.value) })}
-                    onMouseUp={() => saveHistoryStep()}
-                    className="w-full accent-indigo-600"
-                  />
-                </div>
-
-                <div>
-                  <div className="flex justify-between text-xs font-bold text-gray-700 mb-1">
-                    <span>Contrast:</span>
-                    <span>{adjustments.contrast}</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="-100"
-                    max="100"
-                    value={adjustments.contrast}
-                    onChange={(e) => setAdjustments({ ...adjustments, contrast: Number(e.target.value) })}
-                    onMouseUp={() => saveHistoryStep()}
-                    className="w-full accent-indigo-600"
-                  />
-                </div>
               </motion.div>
             )}
 
             {/* EXPORT BUTTON */}
-            <div className="pt-4 border-t border-gray-200/80 space-y-3">
+            <div className="pt-4 border-t border-gray-200/80 dark:border-gray-800 space-y-3">
               <div className="flex items-center justify-between text-xs">
-                <span className="font-bold text-gray-700">Export Format:</span>
+                <span className="font-bold text-gray-700 dark:text-gray-300">Export Format:</span>
                 <div className="flex items-center gap-2">
                   {(['png', 'jpeg', 'webp'] as const).map((fmt) => (
                     <button
@@ -1778,7 +1782,7 @@ export default function PhotoEditorPage() {
                       className={`px-2.5 py-1 rounded-lg text-xs font-bold uppercase cursor-pointer transition-all ${
                         exportFormat === fmt
                           ? 'bg-indigo-600 text-white shadow-xs'
-                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                          : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200'
                       }`}
                     >
                       {fmt}
@@ -1803,90 +1807,6 @@ export default function PhotoEditorPage() {
                 Upload Different Image
               </button>
             </div>
-
-          </div>
-
-          {/* RIGHT SIDE: CANVAS PREVIEW WITH TOOLBAR & AUTO REMOVE QUICK BUTTON */}
-          <div className="lg:col-span-7 flex flex-col items-center">
-            
-            {/* Top Preview Action Bar: Auto BG Remove, Undo, Redo, Reset */}
-            <div className="w-full bg-white px-4 py-2.5 rounded-2xl border border-gray-200/80 shadow-md mb-3 flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={autoRemoveBackground}
-                  disabled={isAutoRemoving}
-                  className="py-1.5 px-3 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-extrabold text-xs flex items-center gap-1.5 transition-all shadow-xs hover:shadow-md cursor-pointer disabled:opacity-50"
-                  title="Automatically remove background using Gemini AI & BFS"
-                >
-                  <Scissors className="w-3.5 h-3.5" />
-                  <span>{isAutoRemoving ? 'Removing...' : 'Auto Remove BG'}</span>
-                </button>
-
-                <button
-                  onClick={handleUndo}
-                  disabled={historyIndex <= 0}
-                  className="py-1.5 px-3 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                  title="Undo last action (Ctrl+Z)"
-                >
-                  <Undo className="w-4 h-4 text-indigo-600" />
-                  <span>Undo</span>
-                </button>
-                <button
-                  onClick={handleRedo}
-                  disabled={historyIndex >= history.length - 1}
-                  className="py-1.5 px-3 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                  title="Redo action (Ctrl+Y)"
-                >
-                  <Redo className="w-4 h-4 text-indigo-600" />
-                  <span>Redo</span>
-                </button>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] font-medium text-gray-500 hidden sm:inline">
-                  Step {historyIndex + 1} of {history.length}
-                </span>
-                <button
-                  onClick={() => {
-                    if (history.length > 0) {
-                      setHistoryIndex(0);
-                      restoreHistoryStep(history[0]);
-                    }
-                  }}
-                  className="py-1.5 px-3 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer"
-                  title="Reset to original photo"
-                >
-                  <RefreshCw className="w-3.5 h-3.5" />
-                  <span>Reset All</span>
-                </button>
-              </div>
-            </div>
-
-            <div className="relative w-full bg-gray-900/90 backdrop-blur-xl p-4 sm:p-8 rounded-3xl border border-gray-800 shadow-2xl flex items-center justify-center min-h-[460px] overflow-hidden">
-              
-              <div 
-                className="relative rounded-2xl overflow-hidden shadow-2xl max-w-full max-h-[600px] border border-gray-700"
-                style={{
-                  backgroundImage: bgMode === 'transparent' ? 'radial-gradient(#4b5563 1px, transparent 1px)' : 'none',
-                  backgroundSize: '16px 16px',
-                  backgroundColor: bgMode === 'transparent' ? '#1f2937' : 'transparent',
-                }}
-              >
-                <canvas
-                  ref={canvasRef}
-                  onMouseDown={handleCanvasMouseDown}
-                  onMouseMove={handleCanvasMouseMove}
-                  onMouseUp={handleCanvasMouseUp}
-                  className="max-w-full max-h-[560px] object-contain cursor-crosshair block"
-                />
-              </div>
-
-            </div>
-
-            <p className="text-xs text-gray-500 mt-3 font-medium flex items-center gap-1.5">
-              <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
-              <span>Full Resolution High-Quality Client-Side Canvas Rendering</span>
-            </p>
 
           </div>
 

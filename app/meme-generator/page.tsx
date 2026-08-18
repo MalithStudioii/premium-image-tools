@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Smile, Upload, Download, Copy, Check, Type, Layers, Trash2, RotateCw, ZoomIn, Eye, Image as ImageIcon, Undo2, Redo2, X, Search, Sparkles, ChevronDown, ChevronUp, Sliders, Palette, LayoutTemplate } from 'lucide-react';
+import { Smile, Upload, Download, Copy, Check, Type, Layers, Trash2, RotateCw, ZoomIn, Eye, Image as ImageIcon, Undo2, Redo2, X, Search, Sparkles, ChevronDown, ChevronUp, Sliders, Palette, LayoutTemplate, Maximize2, Minimize2, RefreshCcw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export interface ImageLayer {
@@ -352,9 +352,10 @@ export default function MemeGeneratorPage() {
   const [twitterHandle, setTwitterHandle] = useState<string>('@dev_guy');
 
   // Accordion Drawers UI State (Smart Tool Collapsible Drawers)
-  const [openSection, setOpenSection] = useState<'text' | 'layout' | 'emoji' | 'bg' | 'filters' | 'watermark' | null>('text');
+  const [openSection, setOpenSection] = useState<'text' | 'layout' | 'emoji' | 'bg' | 'filters' | 'watermark' | 'layers' | null>('text');
+  const [isFocusMode, setIsFocusMode] = useState<boolean>(false);
 
-  const toggleSection = (section: 'text' | 'layout' | 'emoji' | 'bg' | 'filters' | 'watermark') => {
+  const toggleSection = (section: 'text' | 'layout' | 'emoji' | 'bg' | 'filters' | 'watermark' | 'layers') => {
     setOpenSection((prev) => (prev === section ? null : section));
   };
 
@@ -1287,14 +1288,62 @@ export default function MemeGeneratorPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 w-full">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 w-full">
         
-        {/* Left Column: Interactive Canvas Studio (Sticky Top) */}
-        <div className="lg:col-span-7 flex flex-col items-center lg:sticky lg:top-6 self-start z-30">
-          <div className="relative w-full bg-slate-900 rounded-3xl p-4 border border-slate-800 shadow-xl flex items-center justify-center min-h-[420px] overflow-hidden">
+        {/* Left Column: Interactive Canvas Studio (Sticky Top on Mobile & Desktop) */}
+        <div className={`lg:col-span-7 flex flex-col items-center sticky top-14 lg:top-6 self-start z-30 transition-all duration-300 w-full ${isFocusMode ? 'h-[78vh]' : ''}`}>
+          <div className={`relative w-full bg-slate-950/95 rounded-3xl p-3 sm:p-4 border border-slate-800 shadow-2xl flex flex-col items-center justify-center overflow-hidden transition-all duration-300 ${isFocusMode ? 'h-full min-h-[70vh]' : 'h-[36vh] sm:h-[44vh] min-h-[220px] max-h-[340px] sm:max-h-[460px] lg:min-h-[460px] lg:max-h-[520px]'}`}>
+            
+            {/* Floating Canvas Top Bar Controls */}
+            <div className="absolute top-2.5 left-2.5 right-2.5 z-20 flex items-center justify-between pointer-events-none">
+              {/* Left: Undo & Redo quick floating pill */}
+              <div className="flex items-center gap-1 bg-slate-900/80 backdrop-blur-md p-1 rounded-xl border border-slate-700/60 shadow-lg pointer-events-auto">
+                <button
+                  onClick={handleUndo}
+                  disabled={!canUndo}
+                  className="p-1.5 rounded-lg text-slate-200 hover:text-white hover:bg-slate-800 disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer"
+                  title="Undo (Ctrl+Z)"
+                >
+                  <Undo2 className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={handleRedo}
+                  disabled={!canRedo}
+                  className="p-1.5 rounded-lg text-slate-200 hover:text-white hover:bg-slate-800 disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer"
+                  title="Redo (Ctrl+Y)"
+                >
+                  <Redo2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              {/* Right: Fullscreen Focus Mode Toggle & Quick Download */}
+              <div className="flex items-center gap-1.5 bg-slate-900/80 backdrop-blur-md p-1 rounded-xl border border-slate-700/60 shadow-lg pointer-events-auto">
+                <button
+                  onClick={() => setIsFocusMode(!isFocusMode)}
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    isFocusMode 
+                      ? 'bg-indigo-600 text-white shadow-xs' 
+                      : 'text-slate-300 hover:text-white hover:bg-slate-800'
+                  }`}
+                  title={isFocusMode ? "Show Tools" : "Expand Fullscreen Canvas"}
+                >
+                  {isFocusMode ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+                  <span className="text-[10px] hidden sm:inline">{isFocusMode ? 'Tools' : 'Focus'}</span>
+                </button>
+                <button
+                  onClick={() => downloadMeme('png')}
+                  className="p-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white transition-colors cursor-pointer"
+                  title="Quick Download PNG"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Live Canvas */}
             <canvas
               ref={canvasRef}
-              className="touch-none select-none max-h-[480px] w-auto max-w-full rounded-xl object-contain shadow-2xl cursor-grab active:cursor-grabbing"
+              className="touch-none select-none h-auto w-auto max-h-full max-w-full rounded-xl object-contain shadow-2xl cursor-grab active:cursor-grabbing"
               onMouseDown={startDrag}
               onMouseMove={moveDrag}
               onMouseUp={endDrag}
@@ -1305,8 +1354,8 @@ export default function MemeGeneratorPage() {
             />
           </div>
 
-          <p className="text-[11px] font-semibold text-gray-400 mt-2 text-center">
-            💡 Tip: Drag text or PNG overlays on canvas! Pinch with 2 fingers to Zoom In/Out on mobile.
+          <p className="text-[10px] sm:text-[11px] font-semibold text-gray-500 dark:text-gray-400 mt-1.5 text-center">
+            💡 Drag text/stickers • Pinch with 2 fingers to resize on mobile
           </p>
 
           {/* Hidden File Inputs */}
@@ -1331,46 +1380,46 @@ export default function MemeGeneratorPage() {
           />
 
           {/* Action Toolbar */}
-          <div className="flex flex-wrap items-center justify-between gap-3 w-full mt-4">
+          <div className="flex flex-wrap items-center justify-between gap-2 w-full mt-3">
             <div className="flex items-center gap-2">
               <button
                 onClick={() => bgFileInputRef.current?.click()}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md shadow-indigo-500/20 transition-all cursor-pointer"
+                className="flex items-center gap-1.5 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md shadow-indigo-500/20 transition-all cursor-pointer"
               >
-                <Upload className="w-4 h-4" />
-                <span>Upload Background</span>
+                <Upload className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <span className="whitespace-nowrap">Upload BG</span>
               </button>
 
               <button
                 onClick={() => overlayFileInputRef.current?.click()}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-md shadow-purple-500/20 transition-all cursor-pointer"
+                className="flex items-center gap-1.5 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-md shadow-purple-500/20 transition-all cursor-pointer"
               >
-                <Layers className="w-4 h-4" />
-                <span>+ Add Overlay PNG</span>
+                <Layers className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <span className="whitespace-nowrap">+ Add PNG</span>
               </button>
             </div>
 
             <div className="flex items-center gap-2">
               <button
                 onClick={copyToClipboard}
-                className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold text-xs transition-colors cursor-pointer"
+                className="flex items-center gap-1.5 px-3 py-2 sm:py-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200 font-bold text-xs transition-colors cursor-pointer border border-gray-200/60 dark:border-gray-700/60"
               >
-                {copied ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
+                {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
                 <span>{copied ? 'Copied!' : 'Copy'}</span>
               </button>
 
               <button
                 onClick={() => downloadMeme('png')}
-                className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-gray-900 hover:bg-black text-white font-bold text-xs shadow-sm transition-colors cursor-pointer"
+                className="flex items-center gap-1.5 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-gray-900 dark:bg-white hover:bg-black dark:hover:bg-gray-100 text-white dark:text-gray-900 font-bold text-xs shadow-sm transition-colors cursor-pointer"
               >
-                <Download className="w-4 h-4 text-indigo-400" />
+                <Download className="w-3.5 h-3.5 text-indigo-400 dark:text-indigo-600" />
                 <span>Download PNG</span>
               </button>
             </div>
           </div>
 
           {/* Quick Tool Shortcut Bar */}
-          <div className="w-full mt-4 p-2 bg-white rounded-2xl border border-gray-100 shadow-2xs flex items-center justify-around overflow-x-auto no-scrollbar gap-1">
+          <div className="w-full mt-3 p-1.5 bg-white dark:bg-gray-900 rounded-2xl border border-gray-200/80 dark:border-gray-800 shadow-xs flex items-center justify-around overflow-x-auto no-scrollbar gap-1">
             {[
               { id: 'text', icon: '📝', label: 'Text' },
               { id: 'layout', icon: '📐', label: 'Layout' },
@@ -1378,6 +1427,7 @@ export default function MemeGeneratorPage() {
               { id: 'bg', icon: '🎨', label: 'Bg' },
               { id: 'filters', icon: '📷', label: 'Filters' },
               { id: 'watermark', icon: '🏷️', label: 'Tag' },
+              { id: 'layers', icon: '✨', label: 'Presets' },
             ].map((tool) => (
               <button
                 key={tool.id}
@@ -1385,7 +1435,7 @@ export default function MemeGeneratorPage() {
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 cursor-pointer whitespace-nowrap ${
                   openSection === tool.id
                     ? 'bg-indigo-600 text-white shadow-xs'
-                    : 'text-gray-600 hover:bg-gray-100'
+                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
                 }`}
               >
                 <span>{tool.icon}</span>
@@ -1396,7 +1446,7 @@ export default function MemeGeneratorPage() {
         </div>
 
         {/* Right Column: Customization & Overlay Controls (Accordion Drawers) */}
-        <div className="lg:col-span-5 flex flex-col gap-4">
+        <div className={`lg:col-span-5 flex flex-col gap-4 ${isFocusMode ? 'hidden lg:flex' : 'flex'}`}>
           
           {/* Preset PNG Overlay Badges */}
           <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-2xs">
