@@ -1,5 +1,5 @@
 import React from 'react';
-import { Shield, Lock, EyeOff, CheckCircle2 } from 'lucide-react';
+import { Shield, Lock, CheckCircle2 } from 'lucide-react';
 
 export const metadata = {
   title: 'Privacy Policy - Premium Image Tools',

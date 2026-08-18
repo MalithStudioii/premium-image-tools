@@ -5,13 +5,11 @@ import { useDropzone } from 'react-dropzone';
 import {
   UploadCloud,
   Download,
-  RotateCcw,
   Sliders,
   Sparkles,
   Scaling,
   Link as LinkIcon,
   Unlink,
-  CheckCircle2,
   FileImage,
   Loader2,
 } from 'lucide-react';

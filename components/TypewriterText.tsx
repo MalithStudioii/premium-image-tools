@@ -18,18 +18,15 @@ export function TypewriterText({
   cursorClassName = '',
 }: TypewriterTextProps) {
   const [displayedText, setDisplayedText] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
 
   useEffect(() => {
     let charIndex = 0;
     const startTimeout = setTimeout(() => {
-      setIsTyping(true);
       const intervalId = setInterval(() => {
         if (charIndex <= text.length) {
           setDisplayedText(text.slice(0, charIndex));
           charIndex++;
         } else {
-          setIsTyping(false);
           clearInterval(intervalId);
         }
       }, speed);

@@ -639,8 +639,9 @@ export default function PhotoEditorPage() {
 
       setAiLoading(false);
       return data.result;
-    } catch (err: any) {
-      setAiError(err.message || 'Error connecting to AI Server.');
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Error connecting to AI Server.';
+      setAiError(errorMessage);
       setAiLoading(false);
       return null;
     }
@@ -1169,7 +1170,7 @@ export default function PhotoEditorPage() {
                 return (
                   <button
                     key={tab.id}
-                    onClick={() => setActiveTab(tab.id as any)}
+                    onClick={() => setActiveTab(tab.id as 'templates' | 'eraser' | 'lightfx' | 'flare' | 'blur' | 'adjustments' | 'ai')}
                     className={`flex flex-col items-center justify-center py-2 px-0.5 rounded-xl text-[10px] font-bold transition-all cursor-pointer ${
                       isActive
                         ? 'bg-white text-indigo-600 shadow-md shadow-gray-200'
@@ -1236,7 +1237,7 @@ export default function PhotoEditorPage() {
                       <button
                         key={mode.id}
                         onClick={() => {
-                          setBgMode(mode.id as any);
+                          setBgMode(mode.id as 'transparent' | 'solid' | 'gradient' | 'blur');
                           setTimeout(saveHistoryStep, 50);
                         }}
                         className={`py-2 px-2 rounded-xl text-xs font-bold border text-center transition-all cursor-pointer ${
@@ -1471,7 +1472,7 @@ export default function PhotoEditorPage() {
                         {aiContent.caption}
                       </p>
                       <div className="flex flex-wrap gap-1">
-                        {aiContent.hashtags?.map((tag) => (
+                        {aiContent.hashtags?.map((tag: string) => (
                           <span key={tag} className="text-[10px] font-bold text-purple-700 bg-purple-100 px-1.5 py-0.5 rounded">
                             {tag}
                           </span>
@@ -1638,7 +1639,7 @@ export default function PhotoEditorPage() {
                           <button
                             key={style.id}
                             onClick={() => {
-                              setFlare({ ...flare, type: style.id as any });
+                              setFlare({ ...flare, type: style.id as 'anamorphic' | 'sunburst' | 'hexagon' });
                               setTimeout(saveHistoryStep, 50);
                             }}
                             className={`py-2 px-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
@@ -1690,7 +1691,7 @@ export default function PhotoEditorPage() {
                     <button
                       key={mode.id}
                       onClick={() => {
-                        setBlurMode(mode.id as any);
+                        setBlurMode(mode.id as 'none' | 'gaussian' | 'radial' | 'tilt_shift');
                         setTimeout(saveHistoryStep, 50);
                       }}
                       className={`p-3 rounded-2xl border text-xs font-bold transition-all cursor-pointer ${

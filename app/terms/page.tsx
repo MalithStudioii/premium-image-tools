@@ -1,5 +1,5 @@
 import React from 'react';
-import { FileText, ShieldAlert, Check } from 'lucide-react';
+import { FileText, ShieldAlert } from 'lucide-react';
 
 export const metadata = {
   title: 'Terms & Conditions - Premium Image Tools',
