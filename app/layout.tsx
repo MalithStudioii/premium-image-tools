@@ -18,12 +18,90 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://premium-image-tools.vercel.app';
+
 export const metadata: Metadata = {
-  title: "Premium Image Tools - Fast, Free & 100% Private",
-  description: "Compress, crop, resize, and edit images directly in your browser with zero server uploads.",
+  metadataBase: new URL(siteUrl),
+  title: {
+    default: "Premium Image Tools - Fast, Free & 100% Private",
+    template: "%s | Premium Image Tools",
+  },
+  description:
+    "Free, fast, and 100% private client-side image editor. Remove backgrounds with AI, compress, crop, and resize images directly in your browser with zero server uploads.",
+  keywords: [
+    "free online photo editor",
+    "background remover",
+    "ai cutout",
+    "image compressor",
+    "crop image online",
+    "resize image",
+    "client side photo editor",
+    "privacy focused image tools",
+    "lossless png compression",
+    "webp converter",
+    "meme generator",
+  ],
+  authors: [{ name: "Nexia", url: siteUrl }],
+  creator: "Nexia",
+  publisher: "Nexia",
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: siteUrl,
+    siteName: "Premium Image Tools",
+    title: "Premium Image Tools - Fast, Free & 100% Private",
+    description:
+      "Professional image editing suite in your browser. Remove backgrounds with AI, compress, crop, and resize with zero server uploads.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Premium Image Tools - Fast, Free & 100% Private",
+    description:
+      "Professional image editing suite in your browser. Remove backgrounds with AI, compress, crop, and resize with zero server uploads.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
   other: {
     monetag: "100e29890dd00794240cf66653783056",
   },
+};
+
+const structuredData = {
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  name: "Premium Image Tools",
+  url: siteUrl,
+  description:
+    "Fast, free, and 100% private client-side image editing studio with AI background removal, compressor, and resizer.",
+  applicationCategory: "MultimediaApplication",
+  operatingSystem: "All",
+  offers: {
+    "@type": "Offer",
+    price: "0",
+    priceCurrency: "USD",
+  },
+  featureList: [
+    "AI Background Removal & Cutout",
+    "Custom Background Presets & Colors",
+    "Lossless Image Compression",
+    "Aspect Ratio Cropping",
+    "Dimension & Percentage Resizing",
+    "Sensitive Area Blurring & Pixelation",
+    "Color Palette Extraction",
+    "Custom Meme Generation",
+  ],
 };
 
 export default function RootLayout({
@@ -39,6 +117,12 @@ export default function RootLayout({
     >
       <head>
         <meta name="monetag" content="100e29890dd00794240cf66653783056" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(structuredData),
+          }}
+        />
         <script
           dangerouslySetInnerHTML={{
             __html: `
