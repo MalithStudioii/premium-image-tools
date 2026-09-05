@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Minimize2, Crop, Scaling, EyeOff, Palette, Smile, Wand2, Sparkles, Shield, Zap, Lock, ArrowRight, Check } from 'lucide-react';
+import { Minimize2, Crop, Scaling, EyeOff, Palette, Smile, Wand2, Sparkles, Shield, Zap, Lock, ArrowRight, Check, Scan } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { TypewriterText } from '@/components/TypewriterText';
 
@@ -23,20 +23,25 @@ export default function Home() {
         className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-blue-50 via-purple-50 to-rose-50 dark:from-blue-950/60 dark:via-purple-950/60 dark:to-rose-950/60 border border-gray-200/80 dark:border-gray-800 text-xs font-semibold text-gray-800 dark:text-gray-200 mb-6 shadow-xs"
       >
         <Sparkles className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-        <span>Next-Gen Client-Side Image Suite</span>
+        <span>100% Private Client-Side Image Suite</span>
       </motion.div>
 
-      {/* Main Title */}
+      {/* Hero Title & Description */}
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.1 }}
-        className="text-center mb-14"
+        transition={{ duration: 0.5, delay: 0.1 }}
+        className="text-center max-w-3xl mb-14"
       >
-        <h1 className="text-5xl sm:text-6xl md:text-7xl font-extrabold text-gray-900 dark:text-white tracking-tight mb-6 leading-tight">
-          Premium <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">Image Tools</span>
+        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight text-gray-900 dark:text-white mb-6 leading-tight">
+          Professional Image Tools{' '}
+          <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
+            Without Limits
+          </span>
         </h1>
-        <div className="relative max-w-2xl mx-auto text-center">
+        
+        {/* Dynamic Typewriter Description */}
+        <div className="relative flex items-center justify-center min-h-[3.5rem] sm:min-h-[3rem]">
           <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300 font-normal leading-relaxed text-center grid">
             <span className="invisible select-none col-start-1 row-start-1 pointer-events-none" aria-hidden="true">
               Fast, secure, and completely free online image processing. Compress, crop, resize, and blur sensitive data directly in your browser.
@@ -55,6 +60,49 @@ export default function Home() {
 
       {/* Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full mb-20">
+        
+        {/* Passport & ID Photo Maker Card */}
+        <motion.div
+          whileHover={{ y: -6, transition: { duration: 0.2 } }}
+          className="group relative bg-white dark:bg-gray-900 p-7 rounded-3xl shadow-sm hover:shadow-2xl hover:shadow-cyan-500/10 border border-gray-100 dark:border-gray-800 transition-all duration-300 flex flex-col justify-between overflow-hidden"
+        >
+          <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/5 rounded-full blur-2xl group-hover:bg-cyan-500/10 transition-colors" />
+
+          <div>
+            <div className="w-14 h-14 rounded-2xl bg-cyan-50 dark:bg-cyan-950/60 text-cyan-600 dark:text-cyan-300 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300 shadow-xs">
+              <Scan className="w-7 h-7" />
+            </div>
+
+            <span className="text-[11px] font-bold uppercase tracking-wider text-cyan-600 dark:text-cyan-400 bg-cyan-50 dark:bg-cyan-950/60 px-2 py-0.5 rounded-md">
+              Biometric Suite
+            </span>
+
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mt-2 mb-2">
+              Passport &amp; Visa Maker
+            </h2>
+
+            <p className="text-gray-500 dark:text-gray-400 text-xs leading-relaxed mb-6">
+              Create official ICAO-compliant passport and visa photos with HUD guidelines and printable 4x6&quot; sheets.
+            </p>
+
+            <ul className="space-y-2 mb-6 text-xs font-medium text-gray-600 dark:text-gray-300">
+              <li className="flex items-center gap-1.5">
+                <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" /> US 2x2&quot;, Sri Lanka 35x45, Schengen, UK
+              </li>
+              <li className="flex items-center gap-1.5">
+                <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" /> 4x6&quot; Multi-Print Sheet (Save $15)
+              </li>
+            </ul>
+          </div>
+
+          <Link
+            href="/passport-photo"
+            className="w-full py-3 px-4 rounded-xl bg-cyan-600 hover:bg-cyan-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md shadow-cyan-500/20 group-hover:shadow-lg group-hover:shadow-cyan-500/30 transition-all cursor-pointer"
+          >
+            <span>Create Passport Photo</span>
+            <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+          </Link>
+        </motion.div>
         
         {/* Photo Studio Card */}
         <motion.div

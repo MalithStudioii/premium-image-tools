@@ -4,7 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { 
-  Wand2, Minimize2, Crop, Scaling, EyeOff, Palette, Smile, Home 
+  Wand2, Minimize2, Crop, Scaling, EyeOff, Palette, Smile, Home, Scan 
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -13,13 +13,13 @@ export default function MobileDock() {
 
   const dockItems = [
     { name: 'Home', href: '/', icon: Home },
+    { name: 'Passport', href: '/passport-photo', icon: Scan },
     { name: 'Studio', href: '/photo-editor', icon: Wand2 },
     { name: 'Compress', href: '/compress', icon: Minimize2 },
     { name: 'Crop', href: '/crop', icon: Crop },
     { name: 'Resize', href: '/resize', icon: Scaling },
     { name: 'Blur', href: '/blur-sensitive', icon: EyeOff },
     { name: 'Colors', href: '/color-palette', icon: Palette },
-    { name: 'Meme', href: '/meme-generator', icon: Smile },
   ];
 
   return (

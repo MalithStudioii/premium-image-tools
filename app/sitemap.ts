@@ -10,6 +10,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 1.0,
     },
     {
+      path: '/passport-photo',
+      changeFrequency: 'daily' as const,
+      priority: 0.95,
+    },
+    {
       path: '/photo-editor',
       changeFrequency: 'daily' as const,
       priority: 0.95,

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { 
-  Sparkles, Minimize2, Crop, Scaling, EyeOff, Palette, Smile, Wand2, ShieldCheck, Menu, X, Sun, Moon 
+  Sparkles, Minimize2, Crop, Scaling, EyeOff, Palette, Smile, Wand2, ShieldCheck, Menu, X, Sun, Moon, Scan 
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '@/components/ThemeProvider';
@@ -15,6 +15,12 @@ export default function Navbar() {
   const { resolvedTheme, toggleTheme } = useTheme();
 
   const navItems = [
+    {
+      name: 'Passport ID',
+      href: '/passport-photo',
+      icon: Scan,
+      activeColor: 'bg-cyan-50 text-cyan-600 border-cyan-200 dark:bg-cyan-950/60 dark:text-cyan-300 dark:border-cyan-800',
+    },
     {
       name: 'Photo Studio',
       href: '/photo-editor',
